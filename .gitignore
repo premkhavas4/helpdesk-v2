@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+
+# Prisma
+prisma/migrations/dev.db
+prisma/*.db
+
+# Misc
+*.pem
+.cache/
