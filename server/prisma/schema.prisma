@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model knowledge_base {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title      String    @db.VarChar(255)
+  content    String
+  tags       String[]  @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model sessions {
+  sid    String   @id @db.VarChar(255)
+  sess   Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "idx_sessions_expire")
+}
+
+model ticket_replies {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticket_id    String    @db.Uuid
+  agent_id     String    @db.Uuid
+  message      String
+  is_suggested Boolean?  @default(false)
+  sent_at      DateTime? @db.Timestamp(6)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  users        users     @relation(fields: [agent_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  tickets      tickets   @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ticket_id], map: "idx_ticket_replies_ticket_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tickets {
+  id                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject                   String           @db.VarChar(500)
+  body                      String
+  sender_email              String           @db.VarChar(255)
+  status                    String           @default("open") @db.VarChar(50)
+  category                  String           @db.VarChar(50)
+  assigned_to               String?          @db.Uuid
+  classification_confidence Decimal?         @db.Decimal(3, 2)
+  created_at                DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?        @default(now()) @db.Timestamp(6)
+  ticket_replies            ticket_replies[]
+  users                     users?           @relation(fields: [assigned_to], references: [id], onUpdate: NoAction)
+
+  @@index([assigned_to], map: "idx_tickets_assigned_to")
+  @@index([category], map: "idx_tickets_category")
+  @@index([created_at], map: "idx_tickets_created_at")
+  @@index([status], map: "idx_tickets_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String           @unique @db.VarChar(255)
+  password_hash  String           @db.VarChar(255)
+  role           String           @db.VarChar(50)
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
+  ticket_replies ticket_replies[]
+  tickets        tickets[]
+}
