@@ -1,48 +1,87 @@
-import express, { type Request, type Response } from 'express';
+import "dotenv/config";
+import express, { type Request, type Response } from "express";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS - allow client to connect
+// Better Auth must be mounted before express.json()
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
+  res.header(
+    "Access-Control-Allow-Origin",
+    process.env.CLIENT_URL || "http://localhost:5173"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
   next();
 });
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
-// Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+
+// CORS
+app.use((req, res, next) => {
+  res.header(
+    "Access-Control-Allow-Origin",
+    process.env.CLIENT_URL || "http://localhost:5173"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
 });
 
-// API routes
-app.get('/api', (req: Request, res: Response) => {
-  res.json({ message: 'AI-Powered Helpdesk API' });
+// Health check
+app.get("/health", (req: Request, res: Response) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// 404 handler
+// API
+app.get("/api", (req: Request, res: Response) => {
+  res.json({
+    message: "AI-Powered Helpdesk API",
+  });
+});
+
+// 404
 app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not found' });
+  res.status(404).json({ error: "Not found" });
 });
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: any) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ error: "Internal server error" });
 });
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Health check: http://localhost:${PORT}/health`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
