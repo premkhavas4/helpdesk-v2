@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,19 +10,26 @@ const schema = z.object({
 });
 
 export default function LoginPage() {
-  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     resolver: zodResolver(schema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
   });
 
   const onSubmit = (data: { email: string; password: string }) => {
-    fetch(`${import.meta.env.VITE_API_URL}/auth/sign-in/email`, {
+    fetch('/api/auth/sign-in/email', {
       method: 'POST',
-      mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email: data.email, password: data.password }),
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+      }),
     })
       .then((res) => {
         if (!res.ok) throw new Error('Login failed');
@@ -33,10 +39,7 @@ export default function LoginPage() {
         console.log('Login successful');
         navigate('/dashboard');
       })
-      .catch((err) => {
-        console.error(err);
-        setAuthError('Invalid email or password');
-      });
+      .catch((err) => console.error(err));
   };
 
   return (
@@ -44,24 +47,15 @@ export default function LoginPage() {
       <div className="login-card">
         <h2>Helpdesk</h2>
         <p className="subtitle">Sign in to your account</p>
-        {authError && <div className="form-error">{authError}</div>}
         <form onSubmit={handleSubmit(onSubmit)} className="login-form">
           <label>
             <span>Email</span>
-            <input
-              type="email"
-              {...register('email')}
-              className={errors.email ? 'error-border' : ''}
-            />
+            <input type="email" {...register('email')} required className={errors.email ? 'error-border' : ''} />
             {errors.email && <span>{errors.email.message}</span>}
           </label>
           <label>
             <span>Password</span>
-            <input
-              type="password"
-              {...register('password')}
-              required
-            />
+            <input type="password" {...register('password')} required className={errors.password ? 'error-border' : ''} />
             {errors.password && <span>{errors.password.message}</span>}
           </label>
           <button type="submit">Sign In</button>

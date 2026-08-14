@@ -1,7 +1,4 @@
 /* Basic styling for the login page */
-
-:root { --error-color: #ff4d4f; }
-
 /* Login page wrapper */
 .login-page {
   background-color: #f9f9f9;
@@ -49,12 +46,13 @@
   padding: 0.6rem;
   margin-top: 0.25rem;
   border: 1px solid #ddd;
-  border-color: var(--error-color);
-
-  border-color: var(--error-color);
-
   border-radius: 4px;
   font-size: 1rem;
+}
+
+/* Error border for invalid fields */
+.error-border {
+  border-color: #e74c3c !important;
 }
 
 .login-form button {
