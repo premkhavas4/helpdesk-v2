@@ -7,12 +7,14 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun"
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "test:e2e": "bunx playwright test"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "@playwright/test": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
