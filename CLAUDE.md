@@ -48,6 +48,33 @@ HELPDESK/
 
 ## Development Commands
 
+**Playwright E2E**
+
+1. Install Playwright for the client:
+   ```bash
+   cd client
+   bun add -D @playwright/test
+   bun dlv @playwright/test
+   ```
+2. Generate a test template using the `e2e-test-writer` helper:
+   ```bash
+   bunx e2e-test-writer
+   ```
+   This will create an initial `tests` directory under `client` and scaffold a sample test file.
+3. Run the tests with a watch mode:
+   ```bash
+   bun test:e2e
+   ```
+   or for a single test:
+   ```bash
+   bun test:e2e path/to/file.spec.ts
+   ```
+4. Add tests to CI by invoking the `e2e-test-writer` step in your workflow.
+
+## Server
+
+…
+
 Environment setup (Bun not on PATH by default in bash):
 ```bash
 export BUN_INSTALL="$HOME/.bun"
