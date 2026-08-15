@@ -74,9 +74,20 @@ Health check: `GET http://localhost:3000/health`
 
 ## Environment Variables
 
-**Server** (`server/.env`): `PORT=3000`, `CLIENT_URL=http://localhost:5173`, `DATABASE_URL`, `SESSION_SECRET`, `ANTHROPIC_API_KEY`, `SMTP_*` (`SMTP_HOST`/`PORT`/`USER`/`PASSWORD`), `EMAIL_FROM`.
+**Server** (`server/.env`):
+- `PORT=3000`
+- `CLIENT_URL=http://localhost:5173`
+- `DATABASE_URL` (PostgreSQL connection string)
+- `SESSION_SECRET` (Secure random string for cookie signing)
+- `ANTHROPIC_API_KEY` (API key for Claude service)
+- `SMTP_*` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`)
+- `EMAIL_FROM` (Default sender email address for notifications)
+- `AUTH_SECRET` (Secret used for password hashing, e.g., bcrypt salt)
+- `AUTH_EXPIRE` (JWT or cookie expiration in seconds)
 
-**Client** (`client/.env`): `VITE_API_URL=http://localhost:3000`.
+**Client** (`client/.env`):
+- `VITE_API_URL=http://localhost:3000`
+- `VITE_APP_ENV=development` (optional flag for env mode)
 
 ## Ports & URLs
 
@@ -86,7 +97,7 @@ Health check: `GET http://localhost:3000/health`
 ## Implementation Progress
 
 - **Phase 1 (Project Setup):** ✅ Complete — server/client scaffolding, Bun, TypeScript.
-- **Phase 2 (Authentication):** In progress / next up — DB session-based auth, httpOnly cookies.
+- **Phase 2 (Authentication):** In progress — implement DB session-based auth with httpOnly cookies, bcrypt password hashing; JWT or cookie expiry controlled by `AUTH_EXPIRE`.
 - **Phase 3 (User Management):** Pending — RBAC (Admin/Agent), admin CRUD for agents.
 - **Phase 4 (Ticket CRUD):** Pending.
 - **Phase 5 (AI Features):** Pending — Claude classification, summaries, suggested replies, knowledge base.
