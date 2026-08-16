@@ -71,6 +71,18 @@ HELPDESK/
    ```
 4. Add tests to CI by invoking the `e2e-test-writer` step in your workflow.
 
+**Component Testing (Vitest & React Testing Library)**
+
+1. **Writing Component Tests:**
+   - Create test files matching `src/**/*.test.tsx` or `src/**/*.test.ts` (excluded from production builds in `tsconfig.app.json`).
+   - For components using TanStack Query, import `renderWithQuery` from `@/test/test-utils` instead of standard `render` to wrap the component in `QueryClientProvider`.
+   - Mock context hooks (like `useAuth` from `@/context/AuthContext`) and Axios requests (`vi.mock('axios')`) to isolate component rendering.
+   - Configure global DOM testing setup inside `src/test/setup.ts`.
+2. **Executing Component Tests:**
+   - Single run: `cd client && npm run test`
+   - Watch mode (hot-reloading): `cd client && npm run test:watch`
+   - Visual dashboard UI: `cd client && npm run test:ui`
+
 ## Server
 
 …
