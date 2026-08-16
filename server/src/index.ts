@@ -1,72 +1,129 @@
 import "dotenv/config";
-import express, { type Request, type Response } from "express";
+import express from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./auth";
+import { auth, prisma } from "./auth.js";
+import usersRouter from "./routes/users.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Session middleware for auth
-import session from "express-session";
-const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET!,
-  resave: false,
-  saveUninitialized: false,
-});
-app.use(sessionMiddleware);
+// ── Middleware ───────────────────────────────────────────────────────
 
-// Better Auth must be mounted before express.json()
+app.set("trust proxy", 1);
 
-// Middleware
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+  })
+);
+
+// Body parsing — needed for any non-auth POST/PUT endpoints
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// CORS headers for browser compatibility
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL || "http://localhost:5173");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+// Rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: {
+    error: "Too many attempts from this IP, please try again later.",
+  },
+});
+app.use("/api/auth", authLimiter);
+
+// ── Better Auth handler ─────────────────────────────────────────────
+// Better Auth handles: sign-up, sign-in, sign-out, session, etc.
+// All auth routes live under /api/auth/*
+app.all("/api/auth/*splat", toNodeHandler(auth));
+
+// ── Health & Info endpoints ─────────────────────────────────────────
+
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/api", (_req, res) => {
+  res.json({
+    message: "AI-Powered Helpdesk API is running",
+  });
+});
+
+// ── Current user endpoint ───────────────────────────────────────────
+// Returns the full user profile (including role) for the logged-in user.
+// Better Auth session only returns basic user info, so we fetch from DB.
+app.get("/api/me", async (req, res) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: req.headers as any,
+    });
+
+    if (!session?.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
-  next();
 });
 
-// Health check
-app.get("/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+app.use("/api/users", usersRouter);
 
-// Fallback simple auth route
-app.post("/api/auth/login", (req, res) => {
-  const { email, password } = req.body;
-  if (email === "admin@example.com" && password === "password") {
-    req.session!.user = { email };
-    res.json({ message: "Logged in" });
-  } else {
-    res.status(401).json({ error: "Invalid credentials" });
+// ── Seed default admin user ─────────────────────────────────────────
+async function ensureDefaultAdmin() {
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { email: "admin@example.com" },
+    });
+
+    if (existing) {
+      console.log("✓ Default admin user already exists");
+      return;
+    }
+
+    // Use Better Auth's sign-up to create the admin, so password is
+    // properly hashed by Better Auth's internal mechanism.
+    await auth.api.signUpEmail({
+      body: {
+        name: "Admin",
+        email: "admin@example.com",
+        password: "password",
+      },
+    });
+
+    // Now set the role to admin
+    await prisma.user.update({
+      where: { email: "admin@example.com" },
+      data: { role: "admin" },
+    });
+
+    console.log("✓ Default admin user created (admin@example.com / password)");
+  } catch (e) {
+    console.error("✗ Failed to ensure default admin user:", e);
   }
-});
+}
 
-app.use("/api/auth", toNodeHandler(auth));
-
-// API route
-app.get("/api", (req: Request, res: Response) => {
-  res.json({ message: "AI-Powered Helpdesk API" });
-});
-
-// 404
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: "Not found" });
-});
-
-// Error handler
-app.use((err: Error, req: Request, res: Response, next: any) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal server error" });
-});
+// ── Start server ────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  ensureDefaultAdmin();
 });

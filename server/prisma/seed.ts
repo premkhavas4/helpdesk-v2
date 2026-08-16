@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from '../src/generated/prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from "../src/generated/prisma/client.js";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -9,11 +8,10 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const adminEmail = 'admin@example.com';
-const adminPassword = 'SuperSecretPassword123';
-
 async function main() {
-  const existing = await prisma.users.findUnique({
+  const adminEmail = "admin@example.com";
+
+  const existing = await prisma.user.findUnique({
     where: { email: adminEmail },
   });
 
@@ -22,19 +20,10 @@ async function main() {
     return;
   }
 
-  const hash = await bcrypt.hash(adminPassword, 10);
-
-  const user = await prisma.users.create({
-    data: {
-      email: adminEmail,
-      password_hash: hash,
-      role: "admin",
-    },
-  });
-
-  console.log(`✅ Created admin user: ${user.email}`);
+  console.log("Note: Admin user will be auto-created when the server starts.");
+  console.log("Run `bun run dev` to start the server and create the admin user.");
 }
 
 main()
-  .catch((e) => console.error('❌ Seed failed:', e))
+  .catch((e) => console.error("❌ Seed failed:", e))
   .finally(() => prisma.$disconnect());

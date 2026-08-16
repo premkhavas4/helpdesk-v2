@@ -155,3 +155,5 @@ Example topics likely needed soon: Prisma schema/migrations/seeding, Express rou
 - Project working directory: `E:\documents\claude_course\HELPDESK` (Windows, Git Bash shell).
 - Convention: client/server split (NOT backend/frontend).
 - Follow the existing code style: TypeScript, ES modules, semicolons.
+- Use Axios for all client-side HTTP/API requests.
+- Use TanStack Query (React Query) for all frontend data fetching, mutations, and cache management.

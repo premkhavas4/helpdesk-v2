@@ -1,40 +1,125 @@
-import { createContext, useState, useEffect, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useState, useEffect, useContext, type ReactNode } from "react";
 
-export interface User { id: string; email: string; name?: string; }
-export interface AuthContextType { user: User | null; login: (email:string,password:string)=>Promise<boolean>; logout:()=>Promise<void>; }
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-export const AuthContext = createContext<AuthContextType>({ user: null, login: async()=>false, logout: async()=>{} });
+export interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+}
 
-export const AuthProvider = ({children}:{children:ReactNode})=>{
-  const [user, setUser] = useState<User|null>(null);
-  const navigate = useNavigate();
+export interface AuthContextType {
+  user: AuthUser | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+}
 
-  const fetchSession = async()=>{
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  login: async () => false,
+  logout: async () => {},
+  refreshSession: async () => {},
+});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch current session + role from backend
+  const refreshSession = async () => {
     try {
-      const res = await fetch(import.meta.env.VITE_API_URL+'/api/auth/session', { credentials:'include' });
-      if (!res.ok) { setUser(null); return; }
+      const res = await fetch(`${API_URL}/api/auth/get-session`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+
       const data = await res.json();
-      setUser(data.user ?? null);
-    } catch(_) { setUser(null); }
+      if (!data?.user) {
+        setUser(null);
+        return;
+      }
+
+      // Fetch role from /api/me since Better Auth session may not include it
+      try {
+        const meRes = await fetch(`${API_URL}/api/me`, {
+          credentials: "include",
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            role: meData.role,
+          });
+          return;
+        }
+      } catch {
+        // Fall back to session data only
+      }
+
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        role: data.user.role,
+      });
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(()=>{ fetchSession(); }, []);
+  useEffect(() => {
+    refreshSession();
+  }, []);
 
-  const login = async(email:string,password:string)=>{
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const res = await fetch(import.meta.env.VITE_API_URL+'/api/auth/login', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
+      const res = await fetch(`${API_URL}/api/auth/sign-in/email`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
       if (!res.ok) return false;
-      await fetchSession();
-      navigate('/');
+
+      await refreshSession();
       return true;
-    }catch{ return false; }
-  };
-  const logout = async()=>{
-    try { await fetch(import.meta.env.VITE_API_URL+'/api/auth/logout', { method:'POST', credentials:'include' }); } catch(_){}
-    setUser(null);
-    navigate('/login');
+    } catch {
+      return false;
+    }
   };
 
-  return <AuthContext.Provider value={{user,login,logout}}>{children}</AuthContext.Provider>;
-};
+  const logout = async () => {
+    try {
+      await fetch(`${API_URL}/api/auth/sign-out`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Ignore errors — clear local state regardless
+    }
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshSession }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
