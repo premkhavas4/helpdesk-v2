@@ -278,9 +278,28 @@ export default function UsersPage() {
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
-            <p className="text-gray-500 text-sm">Loading team members...</p>
+          <div className="animate-pulse p-6 space-y-4">
+            {/* Table Header skeleton */}
+            <div className="grid grid-cols-5 gap-4 border-b border-gray-100 pb-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-12 justify-self-end"></div>
+            </div>
+            {/* Table Rows skeleton */}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="grid grid-cols-5 gap-4 py-3 items-center border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-44"></div>
+                <div className="h-5 bg-gray-200 rounded-full w-14"></div>
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-10 justify-self-end"></div>
+              </div>
+            ))}
           </div>
         ) : queryError ? (
           <div className="p-6 text-center">
