@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
+import TicketsPage from "./pages/TicketsPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./App.css";
 
@@ -66,6 +67,9 @@ function AppHeader() {
         <Link to="/" className="text-2xl font-bold">
           Helpdesk
         </Link>
+        <Link to="/tickets" className="ml-4 text-blue-700 hover:underline">
+          Tickets
+        </Link>
         {user?.role?.toLowerCase() === "admin" && (
           <Link to="/users" className="ml-4 text-blue-700 hover:underline">
             Users
@@ -116,6 +120,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute>
+                <TicketsPage />
               </ProtectedRoute>
             }
           />
