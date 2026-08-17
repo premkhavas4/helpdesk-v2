@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { createUserSchema, updateUserSchema, type CreateUserInput } from "../../../core/src/schemas/user";
+import { createUserSchema, updateUserSchema, UserRole, type CreateUserInput } from "../../../core/src/schemas/user";
 
 interface UserItem {
   id: string;
@@ -39,7 +39,7 @@ export default function UsersPage() {
       name: "",
       email: "",
       password: "",
-      role: "agent",
+      role: UserRole.AGENT,
     },
   });
 
@@ -51,7 +51,7 @@ export default function UsersPage() {
       name: "",
       email: "",
       password: "",
-      role: "agent",
+      role: UserRole.AGENT,
     });
   }, [reset]);
 
@@ -79,7 +79,7 @@ export default function UsersPage() {
       name: "",
       email: "",
       password: "",
-      role: "agent",
+      role: UserRole.AGENT,
     });
     setShowAddForm(true);
   };
@@ -91,7 +91,7 @@ export default function UsersPage() {
       name: userToEdit.name || "",
       email: userToEdit.email,
       password: "",
-      role: userToEdit.role,
+      role: (userToEdit.role.toLowerCase() as UserRole) || UserRole.AGENT,
     });
     setShowAddForm(true);
   };
@@ -323,8 +323,8 @@ export default function UsersPage() {
                   {...register("role")}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="agent">Agent (Support Staff)</option>
-                  <option value="admin">Administrator (Full Access)</option>
+                  <option value={UserRole.AGENT}>Agent (Support Staff)</option>
+                  <option value={UserRole.ADMIN}>Administrator (Full Access)</option>
                 </select>
                 {errors.role && (
                   <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.role.message}</p>

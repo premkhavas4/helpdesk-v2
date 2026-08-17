@@ -78,12 +78,13 @@ model Verification {
 // ── Application models ──────────────────────────────────────────────
 
 model Ticket {
-  id                        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                        Int           @id @default(autoincrement())
   subject                   String        @db.VarChar(500)
   body                      String
   senderEmail               String        @db.VarChar(255) @map("sender_email")
+  senderName                String        @db.VarChar(255) @map("sender_name")
   status                    String        @default("open") @db.VarChar(50)
-  category                  String        @db.VarChar(50)
+  category                  String?       @db.VarChar(50)
   assignedTo                String?       @map("assigned_to")
   classificationConfidence  Decimal?      @db.Decimal(3, 2) @map("classification_confidence")
   createdAt                 DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
@@ -101,7 +102,7 @@ model Ticket {
 
 model TicketReply {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ticketId    String    @db.Uuid @map("ticket_id")
+  ticketId    Int       @map("ticket_id")
   agentId     String    @map("agent_id")
   message     String
   isSuggested Boolean?  @default(false) @map("is_suggested")
