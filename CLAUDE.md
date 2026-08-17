@@ -169,3 +169,5 @@ Example topics likely needed soon: Prisma schema/migrations/seeding, Express rou
 - Follow the existing code style: TypeScript, ES modules, semicolons.
 - Use Axios for all client-side HTTP/API requests.
 - Use TanStack Query (React Query) for all frontend data fetching, mutations, and cache management.
+- Use Zod schemas for all frontend form validation and backend request validation. Enforce validation on both client and server.
+- Define shared Zod validation schemas inside the `core/src/schemas/` directory, and reference them relatively from both the client and server (e.g., `../../../core/src/schemas/user.js`).

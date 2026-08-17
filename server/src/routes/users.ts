@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma, auth } from "../auth.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { createUserSchema } from "../../../core/src/schemas/user.js";
 
 const router = Router();
 
@@ -35,18 +36,19 @@ router.get("/", async (req, res) => {
 // ── POST /api/users ─────────────────────────────────────────────────
 // Allows admin to create a new user/agent
 router.post("/", async (req, res) => {
-  const { name, email, password, role } = req.body;
-
-  if (!email || !password) {
-    res.status(400).json({ error: "Email and password are required" });
+  const validation = createUserSchema.safeParse(req.body);
+  if (!validation.success) {
+    res.status(400).json({ error: validation.error.issues[0]?.message || "Validation failed" });
     return;
   }
+
+  const { name, email, password, role } = validation.data;
 
   try {
     // 1. Create user using Better Auth
     const signUpResult = await auth.api.signUpEmail({
       body: {
-        name: name || email.split("@")[0],
+        name: name && name.trim() !== "" ? name : (email.split("@")[0] || email),
         email,
         password,
       },

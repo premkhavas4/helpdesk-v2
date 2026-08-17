@@ -48,12 +48,11 @@ describe("UsersPage Component Tests", () => {
   it("displays the skeleton loader while fetching users", () => {
     // Return a pending promise so loading remains true
     mockedAxios.get.mockReturnValueOnce(new Promise(() => {}));
-    renderWithQuery(<UsersPage />);
+    const { container } = renderWithQuery(<UsersPage />);
 
-    // The component should display skeleton loader blocks (which have test tags/roles or structure we can check)
-    // Check that loading table header or pulse container exists
-    const skeletonContainers = screen.getAllByRole("img", { hidden: true }); // SVG/icons or skeleton divs
-    expect(skeletonContainers.length).toBeGreaterThan(0);
+    // The component should display skeleton loader container with animate-pulse class
+    const skeleton = container.querySelector(".animate-pulse");
+    expect(skeleton).toBeInTheDocument();
   });
 
   it("displays an error message when the API request fails", async () => {
@@ -87,8 +86,8 @@ describe("UsersPage Component Tests", () => {
     fireEvent.click(addButton);
     expect(screen.getByText("Create New Team Member")).toBeInTheDocument();
 
-    // Click to close form
-    fireEvent.click(screen.getByRole("button", { name: /Close Form/i }));
+    // Click to close form modal
+    fireEvent.click(screen.getByRole("button", { name: /Close Modal/i }));
     expect(screen.queryByText("Create New Team Member")).not.toBeInTheDocument();
   });
 });

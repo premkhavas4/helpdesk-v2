@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { createUserSchema, type CreateUserInput } from "../../../core/src/schemas/user";
 
 interface UserItem {
   id: string;
@@ -19,11 +22,23 @@ export default function UsersPage() {
 
   // Form toggle state
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState("agent");
   const [formError, setFormError] = useState<string | null>(null);
+
+  // React Hook Form initialization
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateUserInput>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      role: "agent",
+    },
+  });
 
   // Edit inline states
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -42,17 +57,14 @@ export default function UsersPage() {
 
   // 2. Create User Mutation
   const createUserMutation = useMutation({
-    mutationFn: async (newUser: any) => {
+    mutationFn: async (newUser: CreateUserInput) => {
       const res = await axios.post(`${API_URL}/api/users`, newUser, {
         withCredentials: true,
       });
       return res.data;
     },
     onSuccess: () => {
-      setNewEmail("");
-      setNewName("");
-      setNewPassword("");
-      setNewRole("agent");
+      reset();
       setShowAddForm(false);
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
@@ -96,21 +108,9 @@ export default function UsersPage() {
     },
   });
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateUser = (data: CreateUserInput) => {
     setFormError(null);
-
-    if (!newEmail || !newPassword) {
-      setFormError("Email and password are required.");
-      return;
-    }
-
-    createUserMutation.mutate({
-      name: newName,
-      email: newEmail,
-      password: newPassword,
-      role: newRole,
-    });
+    createUserMutation.mutate(data);
   };
 
   const handleDeleteUser = (id: string) => {
@@ -147,6 +147,7 @@ export default function UsersPage() {
           onClick={() => {
             setShowAddForm(!showAddForm);
             setFormError(null);
+            reset(); // Clear form values and errors
           }}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
         >
@@ -202,76 +203,102 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Add User Form Card */}
+      {/* Add User Modal Overlay */}
       {showAddForm && (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-md mb-8 transition-all duration-300">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Team Member</h2>
-          {formError && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">
-              ⚠️ {formError}
-            </div>
-          )}
-          <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-              <input
-                type="text"
-                placeholder="John Doe"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
-              <input
-                type="email"
-                required
-                placeholder="john.doe@company.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Role *</label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="agent">Agent (Support Staff)</option>
-                <option value="admin">Administrator (Full Access)</option>
-              </select>
-            </div>
-            <div className="md:col-span-2 flex justify-end gap-3 mt-2">
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-lg w-full mx-4 transition-transform scale-100">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Create New Team Member</h2>
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                aria-label="Close Modal"
+                onClick={() => {
+                  setShowAddForm(false);
+                  reset();
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={createUserMutation.isPending}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {createUserMutation.isPending ? "Creating..." : "Save Member"}
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          </form>
+            {formError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">
+                ⚠️ {formError}
+              </div>
+            )}
+            <form onSubmit={handleSubmit(handleCreateUser)} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  {...register("name")}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.name.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
+                <input
+                  type="email"
+                  placeholder="john.doe@company.com"
+                  {...register("email")}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.email.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  {...register("password")}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.password.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Role *</label>
+                <select
+                  {...register("role")}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="agent">Agent (Support Staff)</option>
+                  <option value="admin">Administrator (Full Access)</option>
+                </select>
+                {errors.role && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.role.message}</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    reset();
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createUserMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {createUserMutation.isPending ? "Creating..." : "Save Member"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
