@@ -10,10 +10,13 @@ router.use(requireAuth);
 router.use(requireAdmin);
 
 // ── GET /api/users ──────────────────────────────────────────────────
-// Returns a list of all registered users/agents
+// Returns a list of all registered active users/agents (excluding soft-deleted)
 router.get("/", async (req, res) => {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
       select: {
         id: true,
         email: true,
@@ -127,7 +130,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // ── DELETE /api/users/:id ───────────────────────────────────────────
-// Allows admin to delete a user/agent by ID
+// Allows admin to soft-delete a non-admin user/agent by ID
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -137,11 +140,30 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    await prisma.user.delete({
+    const targetUser = await prisma.user.findUnique({
       where: { id },
+      select: { id: true, role: true, deletedAt: true },
     });
 
-    res.json({ message: "User deleted successfully" });
+    if (!targetUser || targetUser.deletedAt) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (targetUser.role.toLowerCase() === "admin") {
+      res.status(400).json({ error: "Admin users cannot be deleted" });
+      return;
+    }
+
+    // Perform soft deletion
+    await prisma.user.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    res.json({ message: "User soft-deleted successfully" });
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(400).json({ error: "Failed to delete user. User might not exist." });

@@ -24,6 +24,8 @@ export default function UsersPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // React Hook Form initialization
   const {
@@ -53,18 +55,22 @@ export default function UsersPage() {
     });
   }, [reset]);
 
-  // Handle ESC key press to close modal
+  const handleCloseDeleteModal = useCallback(() => {
+    setUserToDelete(null);
+    setDeleteError(null);
+  }, []);
+
+  // Handle ESC key press to close modals
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showAddForm) {
-        handleCloseModal();
+      if (e.key === "Escape") {
+        if (showAddForm) handleCloseModal();
+        if (userToDelete) handleCloseDeleteModal();
       }
     };
-    if (showAddForm) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
+    window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddForm, handleCloseModal]);
+  }, [showAddForm, userToDelete, handleCloseModal, handleCloseDeleteModal]);
 
   const handleOpenAddModal = () => {
     setEditingUser(null);
@@ -144,10 +150,11 @@ export default function UsersPage() {
       return res.data;
     },
     onSuccess: () => {
+      handleCloseDeleteModal();
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (err: any) => {
-      alert(err.response?.data?.error || err.message || "Failed to delete user.");
+      setDeleteError(err.response?.data?.error || err.message || "Failed to delete user.");
     },
   });
 
@@ -163,17 +170,9 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteUser = (id: string) => {
-    if (currentUser?.id === id) {
-      alert("You cannot delete your own account.");
-      return;
-    }
-
-    if (!confirm("Are you sure you want to delete this user?")) {
-      return;
-    }
-
-    deleteUserMutation.mutate(id);
+  const handleConfirmDelete = () => {
+    if (!userToDelete) return;
+    deleteUserMutation.mutate(userToDelete.id);
   };
 
   // Stats calculation
@@ -358,6 +357,56 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div
+          data-testid="delete-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseDeleteModal();
+            }
+          }}
+          className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
+        >
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-md w-full mx-4 transition-transform scale-100">
+            <div className="flex items-center gap-3 text-red-600 mb-3">
+              <div className="p-2 bg-red-100 rounded-full">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Delete Team Member</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">{userToDelete.name || userToDelete.email}</span> ({userToDelete.email})? This user will be soft-deleted.
+            </p>
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">
+                ⚠️ {deleteError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleCloseDeleteModal}
+                disabled={deleteUserMutation.isPending}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteUserMutation.isPending}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleteUserMutation.isPending ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {isLoading ? (
@@ -407,46 +456,50 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                    {/* Name */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                          {u.name ? u.name.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
+                {users.map((u) => {
+                  const isAdminUser = u.role.toLowerCase() === "admin";
+                  const isSelf = currentUser?.id === u.id;
+                  const isDeleteDisabled = isAdminUser || isSelf;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                      {/* Name */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                            {u.name ? u.name.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">{u.name || "—"}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{u.name || "—"}</span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Email */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
+                      {/* Email */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
 
-                    {/* Role */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                          u.role.toLowerCase() === "admin"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {u.role}
-                      </span>
-                    </td>
+                      {/* Role */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                            u.role.toLowerCase() === "admin"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                      </td>
 
-                    {/* Created Date */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(u.createdAt).toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </td>
+                      {/* Created Date */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(u.createdAt).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </td>
 
-                    {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                      {currentUser?.id !== u.id && (
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenEditModal(u)}
@@ -460,11 +513,21 @@ export default function UsersPage() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            disabled={deleteUserMutation.isPending}
-                            title="Delete User"
+                            onClick={() => {
+                              if (isDeleteDisabled) return;
+                              setDeleteError(null);
+                              setUserToDelete(u);
+                            }}
+                            disabled={isDeleteDisabled || deleteUserMutation.isPending}
+                            title={
+                              isSelf
+                                ? "You cannot delete your own account"
+                                : isAdminUser
+                                ? "Admin users cannot be deleted"
+                                : "Delete User"
+                            }
                             aria-label={`Delete ${u.name || u.email}`}
-                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 font-medium text-xs border border-red-200 disabled:opacity-50"
+                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 font-medium text-xs border border-red-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-red-600"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -472,10 +535,10 @@ export default function UsersPage() {
                             Delete
                           </button>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {users.length === 0 && (

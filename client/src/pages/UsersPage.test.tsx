@@ -144,4 +144,46 @@ describe("UsersPage Component Tests", () => {
     // Verify optional password label
     expect(screen.getByText("Password (leave blank to keep current)")).toBeInTheDocument();
   });
+
+  it("disables delete button for admin users and current user", async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+    renderWithQuery(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Admin User")).toBeInTheDocument();
+    });
+
+    const adminDeleteButton = screen.getByRole("button", { name: "Delete Admin User" });
+    expect(adminDeleteButton).toBeDisabled();
+  });
+
+  it("opens delete confirmation modal and soft deletes agent on confirmation", async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+    mockedAxios.delete.mockResolvedValueOnce({ data: { message: "User soft-deleted successfully" } });
+
+    renderWithQuery(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Agent One")).toBeInTheDocument();
+    });
+
+    const agentDeleteButton = screen.getByRole("button", { name: "Delete Agent One" });
+    expect(agentDeleteButton).not.toBeDisabled();
+
+    // Click delete to open confirmation modal
+    fireEvent.click(agentDeleteButton);
+
+    expect(screen.getByText("Delete Team Member")).toBeInTheDocument();
+    expect(screen.getByText(/This user will be soft-deleted/i)).toBeInTheDocument();
+
+    // Click confirm delete
+    const confirmButton = screen.getByRole("button", { name: "Confirm Delete" });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockedAxios.delete).toHaveBeenCalledWith("http://localhost:3000/api/users/2", {
+        withCredentials: true,
+      });
+    });
+  });
 });
