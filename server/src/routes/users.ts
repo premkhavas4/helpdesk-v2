@@ -84,17 +84,19 @@ router.post("/", async (req, res) => {
 });
 
 // ── PUT /api/users/:id ──────────────────────────────────────────────
-// Allows admin to update user's name or role
+// Allows admin to update user's name, email, role, or password
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, role } = req.body;
+  const { name, email, role, password } = req.body;
 
   try {
+    // 1. Update user fields in database
     const updated = await prisma.user.update({
       where: { id },
       data: {
-        ...(name && { name }),
-        ...(role && { role }),
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(role !== undefined && { role }),
       },
       select: {
         id: true,
@@ -105,10 +107,22 @@ router.put("/:id", async (req, res) => {
       },
     });
 
+    // 2. If password is provided and non-empty, update password in account table
+    if (password && typeof password === "string" && password.trim().length > 0) {
+      try {
+        await prisma.account.updateMany({
+          where: { userId: id },
+          data: { password },
+        });
+      } catch (pwError) {
+        console.error("Error setting password via account update:", pwError);
+      }
+    }
+
     res.json({ user: updated });
   } catch (error) {
     console.error("Error updating user:", error);
-    res.status(400).json({ error: "Failed to update user. User might not exist." });
+    res.status(400).json({ error: "Failed to update user. User might not exist or email is already taken." });
   }
 });
 

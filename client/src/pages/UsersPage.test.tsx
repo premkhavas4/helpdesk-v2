@@ -1,12 +1,12 @@
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mocked } from "vitest";
 import axios from "axios";
 import UsersPage from "./UsersPage";
 import { renderWithQuery } from "../test/test-utils";
 
 // Mock axios
 vi.mock("axios");
-const mockedAxios = axios as vi.Mocked<typeof axios>;
+const mockedAxios = axios as Mocked<typeof axios>;
 
 // Mock useAuth context hook
 vi.mock("../context/AuthContext", () => ({
@@ -120,5 +120,28 @@ describe("UsersPage Component Tests", () => {
 
     // Verify dialog is hidden
     expect(screen.queryByText("Create New Team Member")).not.toBeInTheDocument();
+  });
+
+  it("opens edit modal pre-populated with user data when edit button is clicked", async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+    renderWithQuery(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Agent One")).toBeInTheDocument();
+    });
+
+    // Click edit button for Agent One
+    const editButton = screen.getByRole("button", { name: "Edit Agent One" });
+    fireEvent.click(editButton);
+
+    // Verify modal title
+    expect(screen.getByText("Edit Team Member")).toBeInTheDocument();
+
+    // Verify form fields are pre-populated with user data
+    expect(screen.getByDisplayValue("Agent One")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("agent1@example.com")).toBeInTheDocument();
+
+    // Verify optional password label
+    expect(screen.getByText("Password (leave blank to keep current)")).toBeInTheDocument();
   });
 });

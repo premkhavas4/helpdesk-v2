@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { createUserSchema, type CreateUserInput } from "../../../core/src/schemas/user";
+import { createUserSchema, updateUserSchema, type CreateUserInput } from "../../../core/src/schemas/user";
 
 interface UserItem {
   id: string;
@@ -20,8 +20,9 @@ export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Form toggle state
+  // Form & Modal state
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // React Hook Form initialization
@@ -31,7 +32,7 @@ export default function UsersPage() {
     reset,
     formState: { errors },
   } = useForm<CreateUserInput>({
-    resolver: zodResolver(createUserSchema),
+    resolver: zodResolver(editingUser ? updateUserSchema : createUserSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -40,23 +41,54 @@ export default function UsersPage() {
     },
   });
 
+  const handleCloseModal = useCallback(() => {
+    setShowAddForm(false);
+    setEditingUser(null);
+    setFormError(null);
+    reset({
+      name: "",
+      email: "",
+      password: "",
+      role: "agent",
+    });
+  }, [reset]);
+
   // Handle ESC key press to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && showAddForm) {
-        setShowAddForm(false);
-        reset();
+        handleCloseModal();
       }
     };
     if (showAddForm) {
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddForm, reset]);
+  }, [showAddForm, handleCloseModal]);
 
-  // Edit inline states
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editRole, setEditRole] = useState("agent");
+  const handleOpenAddModal = () => {
+    setEditingUser(null);
+    setFormError(null);
+    reset({
+      name: "",
+      email: "",
+      password: "",
+      role: "agent",
+    });
+    setShowAddForm(true);
+  };
+
+  const handleOpenEditModal = (userToEdit: UserItem) => {
+    setEditingUser(userToEdit);
+    setFormError(null);
+    reset({
+      name: userToEdit.name || "",
+      email: userToEdit.email,
+      password: "",
+      role: userToEdit.role,
+    });
+    setShowAddForm(true);
+  };
 
   // 1. Fetch Users Query
   const { data: users = [], isLoading, error: queryError } = useQuery<UserItem[]>({
@@ -78,8 +110,7 @@ export default function UsersPage() {
       return res.data;
     },
     onSuccess: () => {
-      reset();
-      setShowAddForm(false);
+      handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (err: any) => {
@@ -87,22 +118,20 @@ export default function UsersPage() {
     },
   });
 
-  // 3. Update User Role Mutation
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: string }) => {
-      const res = await axios.put(
-        `${API_URL}/api/users/${id}`,
-        { role },
-        { withCredentials: true }
-      );
+  // 3. Update User Mutation (full user edit: name, email, role, optional password)
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateUserInput> }) => {
+      const res = await axios.put(`${API_URL}/api/users/${id}`, data, {
+        withCredentials: true,
+      });
       return res.data;
     },
     onSuccess: () => {
-      setEditingUserId(null);
+      handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (err: any) => {
-      alert(err.response?.data?.error || err.message || "Failed to update role.");
+      setFormError(err.response?.data?.error || err.message || "Failed to update user.");
     },
   });
 
@@ -122,9 +151,16 @@ export default function UsersPage() {
     },
   });
 
-  const handleCreateUser = (data: CreateUserInput) => {
+  const handleFormSubmit = (data: CreateUserInput) => {
     setFormError(null);
-    createUserMutation.mutate(data);
+    if (editingUser) {
+      updateUserMutation.mutate({
+        id: editingUser.id,
+        data,
+      });
+    } else {
+      createUserMutation.mutate(data);
+    }
   };
 
   const handleDeleteUser = (id: string) => {
@@ -140,14 +176,12 @@ export default function UsersPage() {
     deleteUserMutation.mutate(id);
   };
 
-  const handleRoleUpdate = (id: string) => {
-    updateRoleMutation.mutate({ id, role: editRole });
-  };
-
   // Stats calculation
   const totalUsers = users.length;
   const adminCount = users.filter((u) => u.role.toLowerCase() === "admin").length;
   const agentCount = users.filter((u) => u.role.toLowerCase() === "agent").length;
+
+  const isSubmitting = createUserMutation.isPending || updateUserMutation.isPending;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -158,19 +192,15 @@ export default function UsersPage() {
           <p className="text-gray-500 mt-1">Manage team members, roles, and platform permissions.</p>
         </div>
         <button
-          onClick={() => {
-            setShowAddForm(!showAddForm);
-            setFormError(null);
-            reset(); // Clear form values and errors
-          }}
+          onClick={showAddForm ? handleCloseModal : handleOpenAddModal}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
         >
           {showAddForm ? (
-            <>Close Form</>
+            "Close Form"
           ) : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Add User
             </>
@@ -217,28 +247,26 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Add User Modal Overlay */}
+      {/* User Modal Overlay (Create & Edit) */}
       {showAddForm && (
         <div
           data-testid="modal-backdrop"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowAddForm(false);
-              reset();
+              handleCloseModal();
             }
           }}
           className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
         >
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-lg w-full mx-4 transition-transform scale-100">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Create New Team Member</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingUser ? "Edit Team Member" : "Create New Team Member"}
+              </h2>
               <button
                 type="button"
                 aria-label="Close Modal"
-                onClick={() => {
-                  setShowAddForm(false);
-                  reset();
-                }}
+                onClick={handleCloseModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +279,7 @@ export default function UsersPage() {
                 ⚠️ {formError}
               </div>
             )}
-            <form onSubmit={handleSubmit(handleCreateUser)} className="space-y-4">
+            <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
                 <input
@@ -277,10 +305,12 @@ export default function UsersPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {editingUser ? "Password (leave blank to keep current)" : "Password *"}
+                </label>
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder={editingUser ? "•••••••• (unchanged)" : "••••••••"}
                   {...register("password")}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
@@ -304,20 +334,23 @@ export default function UsersPage() {
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    reset();
-                  }}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={createUserMutation.isPending}
+                  disabled={isSubmitting}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {createUserMutation.isPending ? "Creating..." : "Save Member"}
+                  {isSubmitting
+                    ? editingUser
+                      ? "Updating..."
+                      : "Creating..."
+                    : editingUser
+                    ? "Update Member"
+                    : "Save Member"}
                 </button>
               </div>
             </form>
@@ -391,41 +424,15 @@ export default function UsersPage() {
 
                     {/* Role */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {editingUserId === u.id ? (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={editRole}
-                            onChange={(e) => setEditRole(e.target.value)}
-                            className="border border-gray-300 rounded px-2 py-1 outline-none text-sm"
-                          >
-                            <option value="agent">agent</option>
-                            <option value="admin">admin</option>
-                          </select>
-                          <button
-                            onClick={() => handleRoleUpdate(u.id)}
-                            disabled={updateRoleMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1 text-xs font-medium transition-colors"
-                          >
-                            {updateRoleMutation.isPending ? "..." : "Save"}
-                          </button>
-                          <button
-                            onClick={() => setEditingUserId(null)}
-                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-1 text-xs font-medium transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                            u.role.toLowerCase() === "admin"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {u.role}
-                        </span>
-                      )}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                          u.role.toLowerCase() === "admin"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {u.role}
+                      </span>
                     </td>
 
                     {/* Created Date */}
@@ -440,21 +447,28 @@ export default function UsersPage() {
                     {/* Actions */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
                       {currentUser?.id !== u.id && (
-                        <div className="flex items-center justify-end gap-3">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => {
-                              setEditingUserId(u.id);
-                              setEditRole(u.role);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            onClick={() => handleOpenEditModal(u)}
+                            title="Edit User"
+                            aria-label={`Edit ${u.name || u.email}`}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 font-medium text-xs border border-blue-200"
                           >
-                            Edit Role
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
                           </button>
                           <button
                             onClick={() => handleDeleteUser(u.id)}
                             disabled={deleteUserMutation.isPending}
-                            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                            title="Delete User"
+                            aria-label={`Delete ${u.name || u.email}`}
+                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 font-medium text-xs border border-red-200 disabled:opacity-50"
                           >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                             Delete
                           </button>
                         </div>

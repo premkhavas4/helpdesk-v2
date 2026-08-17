@@ -5,7 +5,7 @@ const baseUrl = process.env.VITE_API_URL ?? 'http://localhost:5173';
 
 test.describe('Authentication Flow', () => {
   test('login with valid credentials', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto(`${baseUrl}/login`);
     await page.fill('input[name="email"]', 'admin@example.com');
     await page.fill('input[name="password"]', 'adminPassword');
     await page.click('button[type="submit"]');
@@ -28,7 +28,7 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=Password is required')).toBeVisible();
   });
 
-  test('remember me persists session', async ({ page }) => {
+  test('remember me persists session', async ({ page, browser }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'admin@example.com');
     await page.fill('input[name="password"]', 'adminPassword');
@@ -37,7 +37,7 @@ test.describe('Authentication Flow', () => {
     await page.waitForNavigation();
     // Close and reopen page to simulate restart
     await page.context().close();
-    const context = await test.browser.newContext();
+    const context = await browser.newContext();
     const newPage = await context.newPage();
     await newPage.goto('/dashboard');
     await expect(newPage.locator('text=Welcome')).toBeVisible();
