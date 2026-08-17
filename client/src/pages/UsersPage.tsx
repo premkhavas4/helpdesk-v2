@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +39,20 @@ export default function UsersPage() {
       role: "agent",
     },
   });
+
+  // Handle ESC key press to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showAddForm) {
+        setShowAddForm(false);
+        reset();
+      }
+    };
+    if (showAddForm) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAddForm, reset]);
 
   // Edit inline states
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -205,7 +219,16 @@ export default function UsersPage() {
 
       {/* Add User Modal Overlay */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity">
+        <div
+          data-testid="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddForm(false);
+              reset();
+            }
+          }}
+          className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
+        >
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-lg w-full mx-4 transition-transform scale-100">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">Create New Team Member</h2>

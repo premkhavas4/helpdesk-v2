@@ -90,4 +90,35 @@ describe("UsersPage Component Tests", () => {
     fireEvent.click(screen.getByRole("button", { name: /Close Modal/i }));
     expect(screen.queryByText("Create New Team Member")).not.toBeInTheDocument();
   });
+
+  it("hides the modal dialog when clicking outside on the backdrop", async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { users: [] } });
+    renderWithQuery(<UsersPage />);
+
+    // Open modal
+    fireEvent.click(screen.getByRole("button", { name: /Add User/i }));
+    expect(screen.getByText("Create New Team Member")).toBeInTheDocument();
+
+    // Click outside on modal-backdrop
+    const backdrop = screen.getByTestId("modal-backdrop");
+    fireEvent.click(backdrop);
+
+    // Verify dialog is hidden
+    expect(screen.queryByText("Create New Team Member")).not.toBeInTheDocument();
+  });
+
+  it("hides the modal dialog when pressing the Escape key", async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { users: [] } });
+    renderWithQuery(<UsersPage />);
+
+    // Open modal
+    fireEvent.click(screen.getByRole("button", { name: /Add User/i }));
+    expect(screen.getByText("Create New Team Member")).toBeInTheDocument();
+
+    // Press ESC key
+    fireEvent.keyDown(window, { key: "Escape", code: "Escape" });
+
+    // Verify dialog is hidden
+    expect(screen.queryByText("Create New Team Member")).not.toBeInTheDocument();
+  });
 });
