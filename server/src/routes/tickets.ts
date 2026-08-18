@@ -151,4 +151,34 @@ router.get("/", async (req, res) => {
   }
 });
 
+// ── GET /api/tickets/:id ─────────────────────────────────────────────
+// Fetch a single ticket by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    if (isNaN(ticketId)) {
+      res.status(400).json({ error: "Invalid ticket ID" });
+      return;
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        assignedUser: { select: { id: true, name: true, email: true, role: true } },
+        replies: { include: { agent: { select: { id: true, name: true, email: true } } } },
+      },
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    res.json({ ticket });
+  } catch (error) {
+    console.error("Error fetching ticket details:", error);
+    res.status(500).json({ error: "Failed to fetch ticket details" });
+  }
+});
+
 export default router;

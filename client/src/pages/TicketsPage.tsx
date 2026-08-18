@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -111,9 +112,13 @@ export default function TicketsPage() {
         const ticket = info.row.original;
         return (
           <div className="max-w-md">
-            <div className="text-sm font-semibold text-gray-900 truncate" title={ticket.subject}>
+            <Link
+              to={`/tickets/${ticket.id}`}
+              className="text-sm font-semibold text-gray-900 hover:underline truncate block"
+              title={ticket.subject}
+            >
               {ticket.subject}
-            </div>
+            </Link>
             <p className="text-xs text-gray-500 truncate mt-0.5" title={ticket.body}>
               {ticket.body}
             </p>

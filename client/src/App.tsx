@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
 import TicketsPage from "./pages/TicketsPage";
+import TicketDetailPage from "./pages/TicketDetailPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./App.css";
 
@@ -128,6 +129,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <TicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:id"
+            element={
+              <ProtectedRoute>
+                <TicketDetailPage />
               </ProtectedRoute>
             }
           />
