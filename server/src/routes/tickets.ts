@@ -340,7 +340,7 @@ router.post("/:id/replies", async (req, res) => {
       return;
     }
 
-    const { message, agentId, senderType } = req.body;
+    const { message, bodyHtml, agentId, senderType } = req.body;
     if (!message || typeof message !== "string" || message.trim() === "") {
       res.status(400).json({ error: "Reply message is required" });
       return;
@@ -390,6 +390,7 @@ router.post("/:id/replies", async (req, res) => {
         agentId: selectedAgentId || undefined,
         senderType: normalizedSenderType,
         message: message.trim(),
+        bodyHtml: typeof bodyHtml === "string" && bodyHtml.trim() !== "" ? bodyHtml.trim() : null,
         sentAt: new Date(),
       },
       include: {

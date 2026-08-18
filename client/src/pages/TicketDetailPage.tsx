@@ -28,6 +28,7 @@ export interface TicketDetail {
   replies?: Array<{
     id: string;
     message: string;
+    bodyHtml?: string | null;
     senderType?: string;
     sentAt: string;
     agent?: {
@@ -239,7 +240,14 @@ export default function TicketDetailPage() {
                             : ""}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap pl-8">{reply.message}</p>
+                      {reply.bodyHtml ? (
+                        <div
+                          className="text-sm text-gray-800 pl-8 prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: reply.bodyHtml }}
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap pl-8">{reply.message}</p>
+                      )}
                     </div>
                   );
                 })}

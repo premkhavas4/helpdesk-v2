@@ -18,10 +18,10 @@ export const TicketCategory = {
 export type TicketCategory = (typeof TicketCategory)[keyof typeof TicketCategory];
 
 export const createTicketFromEmailSchema = z.object({
-  senderName: z.string().min(1, "Sender name is required."),
-  senderEmail: z.string().email("Invalid sender email address."),
-  subject: z.string().min(1, "Subject is required."),
-  body: z.string().min(1, "Ticket body is required."),
+  senderName: z.string().min(1, "Sender name is required.").max(255, "Sender name must not exceed 255 characters."),
+  senderEmail: z.string().email("Invalid sender email address.").max(255, "Sender email must not exceed 255 characters."),
+  subject: z.string().min(1, "Subject is required.").max(500, "Subject must not exceed 500 characters."),
+  body: z.string().min(1, "Ticket body is required.").max(10000, "Ticket body must not exceed 10,000 characters."),
   category: z.enum([
     TicketCategory.GENERAL_QUESTION,
     TicketCategory.TECHNICAL_QUESTION,
@@ -47,6 +47,7 @@ export type SenderType = (typeof SenderType)[keyof typeof SenderType];
 
 export const createReplySchema = z.object({
   message: z.string().min(1, "Reply message is required."),
+  bodyHtml: z.string().optional(),
   agentId: z.string().optional(),
   senderType: z.enum([SenderType.AGENT, SenderType.CUSTOMER]).optional().default(SenderType.AGENT),
 });

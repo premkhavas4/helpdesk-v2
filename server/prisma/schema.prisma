@@ -106,6 +106,7 @@ model TicketReply {
   agentId     String?   @map("agent_id")
   senderType  String    @default("agent") @db.VarChar(50) @map("sender_type")
   message     String
+  bodyHtml    String?   @map("body_html")
   isSuggested Boolean?  @default(false) @map("is_suggested")
   sentAt      DateTime? @map("sent_at") @db.Timestamp(6)
   createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
