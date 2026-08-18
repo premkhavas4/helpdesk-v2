@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../auth.js";
-import { createTicketFromEmailSchema, TicketStatus, TicketCategory } from "../../../core/src/schemas/ticket.js";
+import { createTicketFromEmailSchema, TicketStatus, TicketCategory, SenderType } from "../../../core/src/schemas/ticket.js";
+import { formatAgents } from "../../../core/src/utils/formatAgents.js";
 
 const router = Router();
 
@@ -164,29 +165,7 @@ router.get("/agents", async (req, res) => {
       orderBy: { createdAt: "asc" },
     });
 
-    const formattedMap = new Map<string, typeof rawAgents[0]>();
-
-    for (const agent of rawAgents) {
-      let displayName = agent.name;
-      const lowerName = agent.name.toLowerCase();
-      const lowerEmail = agent.email.toLowerCase();
-
-      if (lowerName.includes("admin") || lowerEmail.includes("admin")) {
-        displayName = "Admin";
-      } else if (lowerName.includes("one") || lowerName.includes("1") || lowerEmail.includes("agent1")) {
-        displayName = "Agent 1";
-      } else if (lowerName.includes("two") || lowerName.includes("2") || lowerEmail.includes("agent2")) {
-        displayName = "Agent 2";
-      } else if (lowerName.includes("test") || lowerEmail.includes("test")) {
-        displayName = "Test User";
-      }
-
-      if (!formattedMap.has(displayName)) {
-        formattedMap.set(displayName, { ...agent, name: displayName });
-      }
-    }
-
-    const agents = Array.from(formattedMap.values());
+    const agents = formatAgents(rawAgents);
     res.json({ agents });
   } catch (error) {
     console.error("Error fetching agents:", error);
@@ -348,6 +327,80 @@ router.patch("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating ticket:", error);
     res.status(500).json({ error: "Failed to update ticket" });
+  }
+});
+
+// ── POST /api/tickets/:id/replies ───────────────────────────────────
+// Submit a reply to a ticket (supports senderType: "agent" | "customer")
+router.post("/:id/replies", async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    if (isNaN(ticketId)) {
+      res.status(400).json({ error: "Invalid ticket ID" });
+      return;
+    }
+
+    const { message, agentId, senderType } = req.body;
+    if (!message || typeof message !== "string" || message.trim() === "") {
+      res.status(400).json({ error: "Reply message is required" });
+      return;
+    }
+
+    const normalizedSenderType = (senderType === SenderType.CUSTOMER || senderType === "customer")
+      ? SenderType.CUSTOMER
+      : SenderType.AGENT;
+
+    // Verify ticket exists
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    let selectedAgentId: string | null = null;
+
+    if (normalizedSenderType === SenderType.AGENT) {
+      selectedAgentId = agentId || null;
+      if (!selectedAgentId) {
+        if (ticket.assignedTo) {
+          selectedAgentId = ticket.assignedTo;
+        } else {
+          const defaultUser = await prisma.user.findFirst({
+            where: { deletedAt: null },
+            orderBy: { createdAt: "asc" },
+          });
+          if (defaultUser) {
+            selectedAgentId = defaultUser.id;
+          }
+        }
+      }
+
+      if (!selectedAgentId) {
+        res.status(400).json({ error: "No agent available to post reply" });
+        return;
+      }
+    }
+
+    const reply = await prisma.ticketReply.create({
+      data: {
+        ticketId,
+        agentId: selectedAgentId || undefined,
+        senderType: normalizedSenderType,
+        message: message.trim(),
+        sentAt: new Date(),
+      },
+      include: {
+        agent: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    res.status(201).json({ message: "Reply added successfully", reply });
+  } catch (error) {
+    console.error("Error creating ticket reply:", error);
+    res.status(500).json({ error: "Failed to create ticket reply" });
   }
 });
 

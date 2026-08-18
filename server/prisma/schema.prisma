@@ -103,13 +103,14 @@ model Ticket {
 model TicketReply {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ticketId    Int       @map("ticket_id")
-  agentId     String    @map("agent_id")
+  agentId     String?   @map("agent_id")
+  senderType  String    @default("agent") @db.VarChar(50) @map("sender_type")
   message     String
   isSuggested Boolean?  @default(false) @map("is_suggested")
   sentAt      DateTime? @map("sent_at") @db.Timestamp(6)
   createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
-  agent       User      @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  agent       User?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
   ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId], map: "idx_ticket_replies_ticket_id")

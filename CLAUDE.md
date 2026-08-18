@@ -171,3 +171,4 @@ Example topics likely needed soon: Prisma schema/migrations/seeding, Express rou
 - Use TanStack Query (React Query) for all frontend data fetching, mutations, and cache management.
 - Use Zod schemas for all frontend form validation and backend request validation. Enforce validation on both client and server.
 - Define shared Zod validation schemas inside the `core/src/schemas/` directory, and reference them relatively from both the client and server (e.g., `../../../core/src/schemas/user.js`).
+- Define shared utility functions inside the `core/src/utils/` directory (e.g., `formatAgents` in `core/src/utils/formatAgents.ts` for deduplicating and standardizing user display names across client and server).

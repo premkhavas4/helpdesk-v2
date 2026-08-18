@@ -37,3 +37,18 @@ export const assignTicketSchema = z.object({
 });
 
 export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
+
+export const SenderType = {
+  AGENT: "agent",
+  CUSTOMER: "customer",
+} as const;
+
+export type SenderType = (typeof SenderType)[keyof typeof SenderType];
+
+export const createReplySchema = z.object({
+  message: z.string().min(1, "Reply message is required."),
+  agentId: z.string().optional(),
+  senderType: z.enum([SenderType.AGENT, SenderType.CUSTOMER]).optional().default(SenderType.AGENT),
+});
+
+export type CreateReplyInput = z.infer<typeof createReplySchema>;
