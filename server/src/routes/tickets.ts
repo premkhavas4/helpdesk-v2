@@ -95,12 +95,35 @@ router.post("/webhook", async (req, res) => {
 });
 
 // ── GET /api/tickets ────────────────────────────────────────────────
-// List tickets
+// List tickets with server-side sorting & filtering
 router.get("/", async (req, res) => {
   try {
+    const { sortBy = "id", sortOrder = "desc", search, status, category } = req.query;
+
+    const allowedSortFields = ["id", "subject", "senderName", "senderEmail", "status", "category", "createdAt"];
+    const sortField = typeof sortBy === "string" && allowedSortFields.includes(sortBy) ? sortBy : "id";
+    const order = typeof sortOrder === "string" && sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
+
+    const where: any = {};
+    if (typeof status === "string" && status.trim() !== "" && status !== "all") {
+      where.status = status;
+    }
+    if (typeof category === "string" && category.trim() !== "" && category !== "all") {
+      where.category = category;
+    }
+    if (typeof search === "string" && search.trim() !== "") {
+      where.OR = [
+        { subject: { contains: search, mode: "insensitive" } },
+        { senderName: { contains: search, mode: "insensitive" } },
+        { senderEmail: { contains: search, mode: "insensitive" } },
+        { body: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
     const tickets = await prisma.ticket.findMany({
+      where,
       orderBy: {
-        createdAt: "desc",
+        [sortField]: order,
       },
     });
 

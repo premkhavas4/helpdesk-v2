@@ -1,6 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  createColumnHelper,
+  type SortingState,
+} from "@tanstack/react-table";
 import { TicketStatus, TicketCategory } from "../../../core/src/schemas/ticket";
 
 export interface TicketItem {
@@ -17,6 +24,7 @@ export interface TicketItem {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const columnHelper = createColumnHelper<TicketItem>();
 
 export default function TicketsPage() {
   const queryClient = useQueryClient();
@@ -24,65 +32,141 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // Fetch Tickets Query
-  const { data: rawTickets = [], isLoading, error: queryError } = useQuery<TicketItem[]>({
-    queryKey: ["tickets"],
+  // TanStack Table Sorting state (default: highest ID first / id desc)
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "id", desc: true },
+  ]);
+
+  // Extract active sort field and direction for server-side query
+  const activeSort = sorting[0];
+  const sortBy = activeSort ? activeSort.id : "createdAt";
+  const sortOrder = activeSort ? (activeSort.desc ? "desc" : "asc") : "desc";
+
+  // Fetch Tickets Query with Server-Side Sorting & Filtering
+  const { data: tickets = [], isLoading, error: queryError } = useQuery<TicketItem[]>({
+    queryKey: ["tickets", { sortBy, sortOrder, searchTerm, statusFilter, categoryFilter }],
     queryFn: async () => {
       const res = await axios.get(`${API_URL}/api/tickets`, {
+        params: {
+          sortBy,
+          sortOrder,
+          search: searchTerm || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          category: categoryFilter !== "all" ? categoryFilter : undefined,
+        },
         withCredentials: true,
       });
       return res.data.tickets || [];
     },
   });
 
-  // Sort tickets by newest first (createdAt descending) & Apply Filters
-  const filteredAndSortedTickets = useMemo(() => {
-    // 1. Copy array and sort newest first (createdAt desc)
-    const sorted = [...rawTickets].sort((a, b) => {
-      const timeA = new Date(a.createdAt).getTime();
-      const timeB = new Date(b.createdAt).getTime();
-      return timeB - timeA; // Newest first
-    });
+  // Define TanStack Table Columns
+  const columns = [
+    columnHelper.accessor("id", {
+      header: "ID",
+      cell: (info) => <span className="font-semibold text-gray-700">#{info.getValue()}</span>,
+    }),
+    columnHelper.accessor("subject", {
+      header: "Subject",
+      cell: (info) => {
+        const ticket = info.row.original;
+        return (
+          <div className="max-w-md">
+            <div className="text-sm font-semibold text-gray-900 truncate" title={ticket.subject}>
+              {ticket.subject}
+            </div>
+            <p className="text-xs text-gray-500 truncate mt-0.5" title={ticket.body}>
+              {ticket.body}
+            </p>
+          </div>
+        );
+      },
+    }),
+    columnHelper.accessor("senderName", {
+      header: "Sender",
+      cell: (info) => {
+        const ticket = info.row.original;
+        return (
+          <div>
+            <div className="text-sm font-medium text-gray-900">{ticket.senderName}</div>
+            <div className="text-xs text-gray-500">{ticket.senderEmail}</div>
+          </div>
+        );
+      },
+    }),
+    columnHelper.accessor("category", {
+      header: "Category",
+      cell: (info) => {
+        const val = info.getValue();
+        return val ? (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+            {val}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 italic">Uncategorized</span>
+        );
+      },
+    }),
+    columnHelper.accessor("status", {
+      header: "Status",
+      cell: (info) => {
+        const status = info.getValue();
+        let badgeStyle = "bg-gray-100 text-gray-800 border-gray-200";
+        switch (status.toLowerCase()) {
+          case TicketStatus.OPEN:
+            badgeStyle = "bg-blue-100 text-blue-800 border-blue-200";
+            break;
+          case TicketStatus.IN_PROGRESS:
+            badgeStyle = "bg-amber-100 text-amber-800 border-amber-200";
+            break;
+          case TicketStatus.RESOLVED:
+            badgeStyle = "bg-emerald-100 text-emerald-800 border-emerald-200";
+            break;
+          case TicketStatus.CLOSED:
+            badgeStyle = "bg-gray-100 text-gray-700 border-gray-200";
+            break;
+        }
+        return (
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeStyle}`}>
+            {status.toUpperCase()}
+          </span>
+        );
+      },
+    }),
+    columnHelper.accessor("createdAt", {
+      header: "Created At",
+      cell: (info) => (
+        <span className="text-xs text-gray-500">
+          {new Date(info.getValue()).toLocaleString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+      ),
+    }),
+  ];
 
-    // 2. Filter by search term and status
-    return sorted.filter((ticket) => {
-      const matchesSearch =
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.senderEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.body.toLowerCase().includes(searchTerm.toLowerCase());
+  // TanStack Table Instance (manualSorting enabled for server-side sorting)
+  const table = useReactTable({
+    data: tickets,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    enableSortingRemoval: false, // Prevent clearing sort state on 3rd click (only toggle ASC <-> DESC)
+    manualSorting: true, // Tell TanStack Table that sorting is handled on the server!
+    getCoreRowModel: getCoreRowModel(),
+  });
 
-      const matchesStatus =
-        statusFilter === "all" || ticket.status.toLowerCase() === statusFilter.toLowerCase();
-
-      const matchesCategory =
-        categoryFilter === "all" ||
-        (ticket.category && ticket.category.toLowerCase() === categoryFilter.toLowerCase());
-
-      return matchesSearch && matchesStatus && matchesCategory;
-    });
-  }, [rawTickets, searchTerm, statusFilter, categoryFilter]);
-
-  // Statistics calculation
-  const totalTicketsCount = rawTickets.length;
-  const openCount = rawTickets.filter((t) => t.status.toLowerCase() === TicketStatus.OPEN).length;
-  const resolvedCount = rawTickets.filter((t) => t.status.toLowerCase() === TicketStatus.RESOLVED).length;
-  const closedCount = rawTickets.filter((t) => t.status.toLowerCase() === TicketStatus.CLOSED).length;
-
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status.toLowerCase()) {
-      case TicketStatus.OPEN:
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case TicketStatus.IN_PROGRESS:
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      case TicketStatus.RESOLVED:
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case TicketStatus.CLOSED:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  // Calculate quick summary metrics
+  const totalTicketsCount = tickets.length;
+  const openCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.OPEN).length;
+  const resolvedCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.RESOLVED).length;
+  const closedCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.CLOSED).length;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -90,7 +174,7 @@ export default function TicketsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Support Tickets</h1>
-          <p className="text-gray-500 mt-1">View, track, and manage incoming support tickets (sorted newest first).</p>
+          <p className="text-gray-500 mt-1">View, sort, and manage support tickets with TanStack Table server-side sorting.</p>
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets"] })}
@@ -154,16 +238,16 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
+      {/* Filter & Search Toolbar */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-        {/* Search Bar */}
+        {/* Search Input */}
         <div className="relative w-full md:w-96">
           <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
-            placeholder="Search by subject, sender name, email..."
+            placeholder="Search by subject, sender, body..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
@@ -203,7 +287,7 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Main Ticket Table Card */}
+      {/* TanStack Table View */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="animate-pulse p-6 space-y-4">
@@ -226,75 +310,44 @@ export default function TicketsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <th className="px-6 py-4">ID</th>
-                  <th className="px-6 py-4">Subject</th>
-                  <th className="px-6 py-4">Sender</th>
-                  <th className="px-6 py-4">Category</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Created At</th>
-                </tr>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {headerGroup.headers.map((header) => {
+                      const isSorted = header.column.getIsSorted();
+                      return (
+                        <th
+                          key={header.id}
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="px-6 py-4 cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                          title="Click to sort by this column"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {/* Sorting Icon indicator */}
+                            <span className="text-gray-400 font-normal">
+                              {isSorted === "asc" ? "▲" : isSorted === "desc" ? "▼" : "↕"}
+                            </span>
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                ))}
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredAndSortedTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                    {/* ID */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">
-                      #{ticket.id}
-                    </td>
-
-                    {/* Subject & Body snippet */}
-                    <td className="px-6 py-4">
-                      <div className="max-w-md">
-                        <div className="text-sm font-semibold text-gray-900 truncate" title={ticket.subject}>
-                          {ticket.subject}
-                        </div>
-                        <p className="text-xs text-gray-500 truncate mt-0.5" title={ticket.body}>
-                          {ticket.body}
-                        </p>
-                      </div>
-                    </td>
-
-                    {/* Sender Info */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{ticket.senderName}</div>
-                      <div className="text-xs text-gray-500">{ticket.senderEmail}</div>
-                    </td>
-
-                    {/* Category */}
-                    <td className="px-6 py-4 whitespace-nowrap text-xs">
-                      {ticket.category ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                          {ticket.category}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 italic">Uncategorized</span>
-                      )}
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="px-6 py-4 whitespace-nowrap text-xs">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-semibold border ${getStatusBadgeStyle(ticket.status)}`}>
-                        {ticket.status.toUpperCase()}
-                      </span>
-                    </td>
-
-                    {/* Created Date (Newest First) */}
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 text-right">
-                      {new Date(ticket.createdAt).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-6 py-4">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            {filteredAndSortedTickets.length === 0 && (
+            {table.getRowModel().rows.length === 0 && (
               <div className="p-8 text-center text-gray-500 text-sm">
                 No support tickets found matching your filters.
               </div>
