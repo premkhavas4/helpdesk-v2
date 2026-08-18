@@ -30,3 +30,10 @@ export const createTicketFromEmailSchema = z.object({
 });
 
 export type CreateTicketFromEmailInput = z.infer<typeof createTicketFromEmailSchema>;
+
+export const assignTicketSchema = z.object({
+  assignedTo: z.string().nullable().optional(),
+  assignedToId: z.string().nullable().optional(),
+});
+
+export type AssignTicketInput = z.infer<typeof assignTicketSchema>;

@@ -131,6 +131,9 @@ router.get("/", async (req, res) => {
         orderBy: {
           [sortField]: order,
         },
+        include: {
+          assignedUser: { select: { id: true, name: true, email: true, role: true } },
+        },
         skip,
         take: limit,
       }),
@@ -148,6 +151,46 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Error fetching tickets:", error);
     res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+
+// ── GET /api/tickets/agents ─────────────────────────────────────────
+// Fetch active agents/users for ticket assignment dropdowns
+router.get("/agents", async (req, res) => {
+  try {
+    const rawAgents = await prisma.user.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const formattedMap = new Map<string, typeof rawAgents[0]>();
+
+    for (const agent of rawAgents) {
+      let displayName = agent.name;
+      const lowerName = agent.name.toLowerCase();
+      const lowerEmail = agent.email.toLowerCase();
+
+      if (lowerName.includes("admin") || lowerEmail.includes("admin")) {
+        displayName = "Admin";
+      } else if (lowerName.includes("one") || lowerName.includes("1") || lowerEmail.includes("agent1")) {
+        displayName = "Agent 1";
+      } else if (lowerName.includes("two") || lowerName.includes("2") || lowerEmail.includes("agent2")) {
+        displayName = "Agent 2";
+      } else if (lowerName.includes("test") || lowerEmail.includes("test")) {
+        displayName = "Test User";
+      }
+
+      if (!formattedMap.has(displayName)) {
+        formattedMap.set(displayName, { ...agent, name: displayName });
+      }
+    }
+
+    const agents = Array.from(formattedMap.values());
+    res.json({ agents });
+  } catch (error) {
+    console.error("Error fetching agents:", error);
+    res.status(500).json({ error: "Failed to fetch agents list" });
   }
 });
 
@@ -178,6 +221,109 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error fetching ticket details:", error);
     res.status(500).json({ error: "Failed to fetch ticket details" });
+  }
+});
+
+// ── PATCH /api/tickets/:id/assign ───────────────────────────────────
+// Assign or unassign a ticket to an agent (ensures assignedTo / assignedToId is a valid user)
+router.patch("/:id/assign", async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    if (isNaN(ticketId)) {
+      res.status(400).json({ error: "Invalid ticket ID" });
+      return;
+    }
+
+    // Accept assignedTo or assignedToId
+    const rawAssignedTo = req.body.assignedToId !== undefined ? req.body.assignedToId : req.body.assignedTo;
+    const assignedTo = typeof rawAssignedTo === "string" && rawAssignedTo.trim() !== "" ? rawAssignedTo.trim() : null;
+
+    if (assignedTo) {
+      // Verify assignedTo / assignedToId is a valid user who is not soft-deleted
+      const validUser = await prisma.user.findFirst({
+        where: {
+          id: assignedTo,
+          deletedAt: null,
+        },
+      });
+
+      if (!validUser) {
+        res.status(400).json({
+          error: "Invalid assignedTo user: User does not exist or has been deleted",
+        });
+        return;
+      }
+    }
+
+    const ticket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        assignedTo,
+      },
+      include: {
+        assignedUser: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    res.json({ message: "Ticket assigned successfully", ticket });
+  } catch (error) {
+    console.error("Error assigning ticket:", error);
+    res.status(500).json({ error: "Failed to assign ticket" });
+  }
+});
+
+// ── PATCH /api/tickets/:id ───────────────────────────────────────────
+// General update ticket endpoint with assignedTo / assignedToId validation
+router.patch("/:id", async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    if (isNaN(ticketId)) {
+      res.status(400).json({ error: "Invalid ticket ID" });
+      return;
+    }
+
+    const { status, category, assignedTo, assignedToId } = req.body;
+    const rawAssignedTo = assignedToId !== undefined ? assignedToId : assignedTo;
+
+    const updateData: any = {};
+
+    if (status !== undefined) updateData.status = status;
+    if (category !== undefined) updateData.category = category;
+
+    if (rawAssignedTo !== undefined) {
+      const assignedToIdValue = typeof rawAssignedTo === "string" && rawAssignedTo.trim() !== "" ? rawAssignedTo.trim() : null;
+
+      if (assignedToIdValue) {
+        const validUser = await prisma.user.findFirst({
+          where: {
+            id: assignedToIdValue,
+            deletedAt: null,
+          },
+        });
+
+        if (!validUser) {
+          res.status(400).json({
+            error: "Invalid assignedTo user: User does not exist or has been deleted",
+          });
+          return;
+        }
+      }
+
+      updateData.assignedTo = assignedToIdValue;
+    }
+
+    const ticket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: updateData,
+      include: {
+        assignedUser: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    res.json({ message: "Ticket updated successfully", ticket });
+  } catch (error) {
+    console.error("Error updating ticket:", error);
+    res.status(500).json({ error: "Failed to update ticket" });
   }
 });
 

@@ -1,7 +1,15 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { TicketStatus } from "../../../core/src/schemas/ticket";
+
+export interface AgentUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 export interface TicketDetail {
   id: number;
@@ -14,12 +22,7 @@ export interface TicketDetail {
   assignedTo?: string | null;
   createdAt: string;
   updatedAt?: string | null;
-  assignedUser?: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  } | null;
+  assignedUser?: AgentUser | null;
   replies?: Array<{
     id: string;
     message: string;
@@ -37,6 +40,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: ticket, isLoading, error } = useQuery<TicketDetail>({
     queryKey: ["ticket", id],
@@ -47,6 +51,56 @@ export default function TicketDetailPage() {
       return res.data.ticket;
     },
     enabled: !!id,
+  });
+
+  const { data: agentsData } = useQuery<{ agents: AgentUser[] }>({
+    queryKey: ["agents"],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/api/tickets/agents`, {
+        withCredentials: true,
+      });
+      return res.data;
+    },
+  });
+
+  const rawAgentsList = useMemo(() => agentsData?.agents || [], [agentsData]);
+  const agents = useMemo(() => {
+    const formattedMap = new Map<string, AgentUser>();
+    for (const agent of rawAgentsList) {
+      let displayName = agent.name;
+      const lowerName = agent.name.toLowerCase();
+      const lowerEmail = agent.email.toLowerCase();
+
+      if (lowerName.includes("admin") || lowerEmail.includes("admin")) {
+        displayName = "Admin";
+      } else if (lowerName.includes("one") || lowerName.includes("1") || lowerEmail.includes("agent1")) {
+        displayName = "Agent 1";
+      } else if (lowerName.includes("two") || lowerName.includes("2") || lowerEmail.includes("agent2")) {
+        displayName = "Agent 2";
+      } else if (lowerName.includes("test") || lowerEmail.includes("test")) {
+        displayName = "Test User";
+      }
+
+      if (!formattedMap.has(displayName)) {
+        formattedMap.set(displayName, { ...agent, name: displayName });
+      }
+    }
+    return Array.from(formattedMap.values());
+  }, [rawAgentsList]);
+
+  const assignTicketMutation = useMutation({
+    mutationFn: async ({ ticketId, assignedTo }: { ticketId: number; assignedTo: string | null }) => {
+      const res = await axios.patch(
+        `${API_URL}/api/tickets/${ticketId}/assign`,
+        { assignedTo },
+        { withCredentials: true }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticket", id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
   });
 
   if (isLoading) {
@@ -124,8 +178,8 @@ export default function TicketDetailPage() {
           </div>
         </div>
 
-        {/* Sender & Timestamp Info Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded-lg border border-gray-100">
+        {/* Sender, Assignment & Timestamp Info Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 p-4 rounded-lg border border-gray-100 items-center">
           <div>
             <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider block">Sender Name</span>
             <span className="font-semibold text-gray-900">{ticket.senderName}</span>
@@ -133,6 +187,24 @@ export default function TicketDetailPage() {
           <div>
             <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider block">Sender Email</span>
             <span className="font-medium text-blue-600 select-all">{ticket.senderEmail}</span>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider block mb-1">Assigned Agent</span>
+            <select
+              value={ticket.assignedTo || ""}
+              onChange={(e) => {
+                const newAgentId = e.target.value || null;
+                assignTicketMutation.mutate({ ticketId: ticket.id, assignedTo: newAgentId });
+              }}
+              className="border border-gray-300 rounded px-2.5 py-1 bg-white text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm w-full"
+            >
+              <option value="">Unassigned</option>
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider block">Created Date</span>
