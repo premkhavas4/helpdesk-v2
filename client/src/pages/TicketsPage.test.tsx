@@ -37,23 +37,26 @@ describe("TicketsPage Component Tests", () => {
   });
 
   it("renders the page header, TanStack table, and summary stats cards", async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: { tickets: mockTickets } });
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { tickets: mockTickets, totalCount: 2, page: 1, pageSize: 10, totalPages: 1 },
+    });
     renderWithQuery(<TicketsPage />);
 
     expect(screen.getByText("Support Tickets")).toBeInTheDocument();
-    expect(screen.getByText(/View, sort, and manage support tickets with TanStack Table/i)).toBeInTheDocument();
+    expect(screen.getByText(/View, sort, and manage support tickets/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("Newer Ticket")).toBeInTheDocument();
     });
 
     expect(screen.getByText("Total Tickets")).toBeInTheDocument();
-    expect(screen.getByText("Open Tickets")).toBeInTheDocument();
-    expect(screen.getAllByText("Resolved")[0]).toBeInTheDocument();
+    expect(screen.getByText("Open (Current Page)")).toBeInTheDocument();
   });
 
-  it("fetches tickets with server-side sorting parameters (default: sortBy=createdAt&sortOrder=desc)", async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: { tickets: mockTickets } });
+  it("fetches tickets with server-side sorting and pagination parameters", async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { tickets: mockTickets, totalCount: 2, page: 1, pageSize: 10, totalPages: 1 },
+    });
     renderWithQuery(<TicketsPage />);
 
     await waitFor(() => {
@@ -61,8 +64,10 @@ describe("TicketsPage Component Tests", () => {
         "http://localhost:3000/api/tickets",
         expect.objectContaining({
           params: expect.objectContaining({
-            sortBy: "createdAt",
+            sortBy: "id",
             sortOrder: "desc",
+            page: 1,
+            pageSize: 10,
           }),
         })
       );
@@ -70,7 +75,9 @@ describe("TicketsPage Component Tests", () => {
   });
 
   it("toggles column sorting and triggers server-side sort request", async () => {
-    mockedAxios.get.mockResolvedValue({ data: { tickets: mockTickets } });
+    mockedAxios.get.mockResolvedValue({
+      data: { tickets: mockTickets, totalCount: 2, page: 1, pageSize: 10, totalPages: 1 },
+    });
     renderWithQuery(<TicketsPage />);
 
     await waitFor(() => {

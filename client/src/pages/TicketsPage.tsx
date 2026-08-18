@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,6 +7,7 @@ import {
   flexRender,
   createColumnHelper,
   type SortingState,
+  type PaginationState,
 } from "@tanstack/react-table";
 import { TicketStatus, TicketCategory } from "../../../core/src/schemas/ticket";
 
@@ -23,6 +24,14 @@ export interface TicketItem {
   updatedAt?: string | null;
 }
 
+export interface TicketsApiResponse {
+  tickets: TicketItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const columnHelper = createColumnHelper<TicketItem>();
 
@@ -37,14 +46,22 @@ export default function TicketsPage() {
     { id: "id", desc: true },
   ]);
 
+  // TanStack Table Pagination state (default: pageIndex 0, pageSize 10)
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const pagination = useMemo(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+
   // Extract active sort field and direction for server-side query
   const activeSort = sorting[0];
-  const sortBy = activeSort ? activeSort.id : "createdAt";
+  const sortBy = activeSort ? activeSort.id : "id";
   const sortOrder = activeSort ? (activeSort.desc ? "desc" : "asc") : "desc";
 
-  // Fetch Tickets Query with Server-Side Sorting & Filtering
-  const { data: tickets = [], isLoading, error: queryError } = useQuery<TicketItem[]>({
-    queryKey: ["tickets", { sortBy, sortOrder, searchTerm, statusFilter, categoryFilter }],
+  // Fetch Tickets Query with Server-Side Sorting, Filtering & Pagination
+  const { data, isLoading, error: queryError } = useQuery<TicketsApiResponse>({
+    queryKey: ["tickets", { sortBy, sortOrder, searchTerm, statusFilter, categoryFilter, pageIndex, pageSize }],
     queryFn: async () => {
       const res = await axios.get(`${API_URL}/api/tickets`, {
         params: {
@@ -53,12 +70,34 @@ export default function TicketsPage() {
           search: searchTerm || undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           category: categoryFilter !== "all" ? categoryFilter : undefined,
+          page: pageIndex + 1,
+          pageSize,
         },
         withCredentials: true,
       });
-      return res.data.tickets || [];
+      return res.data || { tickets: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 0 };
     },
   });
+
+  const tickets = data?.tickets || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = data?.totalPages || 0;
+
+  // Handlers for search/filter input change (reset to page 0)
+  const handleSearchChange = (val: string) => {
+    setSearchTerm(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const handleStatusChange = (val: string) => {
+    setStatusFilter(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setCategoryFilter(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
 
   // Define TanStack Table Columns
   const columns = [
@@ -149,21 +188,25 @@ export default function TicketsPage() {
     }),
   ];
 
-  // TanStack Table Instance (manualSorting enabled for server-side sorting)
+  // TanStack Table Instance (manualSorting & manualPagination enabled for server-side control)
   const table = useReactTable({
     data: tickets,
     columns,
+    pageCount: totalPages,
     state: {
       sorting,
+      pagination,
     },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     enableSortingRemoval: false, // Prevent clearing sort state on 3rd click (only toggle ASC <-> DESC)
-    manualSorting: true, // Tell TanStack Table that sorting is handled on the server!
+    manualSorting: true,
+    manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
   });
 
   // Calculate quick summary metrics
-  const totalTicketsCount = tickets.length;
+  const totalTicketsCount = totalCount;
   const openCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.OPEN).length;
   const resolvedCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.RESOLVED).length;
   const closedCount = tickets.filter((t) => t.status.toLowerCase() === TicketStatus.CLOSED).length;
@@ -174,7 +217,7 @@ export default function TicketsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Support Tickets</h1>
-          <p className="text-gray-500 mt-1">View, sort, and manage support tickets with TanStack Table server-side sorting.</p>
+          <p className="text-gray-500 mt-1">View, sort, and manage support tickets with server-side pagination.</p>
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets"] })}
@@ -203,7 +246,7 @@ export default function TicketsPage() {
 
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider">Open Tickets</span>
+            <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider">Open (Current Page)</span>
             <h3 className="text-2xl font-bold text-blue-900 mt-1">{openCount}</h3>
           </div>
           <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
@@ -215,7 +258,7 @@ export default function TicketsPage() {
 
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Resolved</span>
+            <span className="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Resolved (Current Page)</span>
             <h3 className="text-2xl font-bold text-emerald-900 mt-1">{resolvedCount}</h3>
           </div>
           <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
@@ -227,7 +270,7 @@ export default function TicketsPage() {
 
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Closed</span>
+            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Closed (Current Page)</span>
             <h3 className="text-2xl font-bold text-gray-700 mt-1">{closedCount}</h3>
           </div>
           <div className="p-3 bg-gray-100 rounded-lg text-gray-500">
@@ -249,7 +292,7 @@ export default function TicketsPage() {
             type="text"
             placeholder="Search by subject, sender, body..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
           />
         </div>
@@ -260,7 +303,7 @@ export default function TicketsPage() {
             <label className="text-xs text-gray-500 font-medium mr-2">Status:</label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="all">All Statuses</option>
@@ -275,7 +318,7 @@ export default function TicketsPage() {
             <label className="text-xs text-gray-500 font-medium mr-2">Category:</label>
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="all">All Categories</option>
@@ -352,9 +395,82 @@ export default function TicketsPage() {
                 No support tickets found matching your filters.
               </div>
             )}
+
+            {/* Pagination Controls Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <span>
+                  Showing{" "}
+                  <span className="font-semibold text-gray-900">
+                    {totalCount === 0 ? 0 : pageIndex * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-gray-900">
+                    {Math.min((pageIndex + 1) * pageSize, totalCount)}
+                  </span>{" "}
+                  of <span className="font-semibold text-gray-900">{totalCount}</span> tickets
+                </span>
+                <span className="text-gray-300">|</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    table.setPageSize(Number(e.target.value));
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 bg-white text-xs text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {[10, 20, 25, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  title="First Page"
+                >
+                  « First
+                </button>
+                <button
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  title="Previous Page"
+                >
+                  ‹ Prev
+                </button>
+
+                <span className="px-3 text-xs font-medium text-gray-700">
+                  Page <span className="font-bold text-gray-900">{pageIndex + 1}</span> of{" "}
+                  <span className="font-bold text-gray-900">{totalPages || 1}</span>
+                </span>
+
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  title="Next Page"
+                >
+                  Next ›
+                </button>
+                <button
+                  onClick={() => table.setPageIndex(totalPages - 1)}
+                  disabled={!table.getCanNextPage()}
+                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  title="Last Page"
+                >
+                  Last »
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 }
+

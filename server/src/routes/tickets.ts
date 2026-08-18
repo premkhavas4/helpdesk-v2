@@ -98,11 +98,15 @@ router.post("/webhook", async (req, res) => {
 // List tickets with server-side sorting & filtering
 router.get("/", async (req, res) => {
   try {
-    const { sortBy = "id", sortOrder = "desc", search, status, category } = req.query;
+    const { sortBy = "id", sortOrder = "desc", search, status, category, page = "1", pageSize = "10" } = req.query;
 
     const allowedSortFields = ["id", "subject", "senderName", "senderEmail", "status", "category", "createdAt"];
     const sortField = typeof sortBy === "string" && allowedSortFields.includes(sortBy) ? sortBy : "id";
     const order = typeof sortOrder === "string" && sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
+
+    const pageNum = Math.max(1, parseInt(typeof page === "string" ? page : "1", 10) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(typeof pageSize === "string" ? pageSize : "10", 10) || 10));
+    const skip = (pageNum - 1) * limit;
 
     const where: any = {};
     if (typeof status === "string" && status.trim() !== "" && status !== "all") {
@@ -120,14 +124,27 @@ router.get("/", async (req, res) => {
       ];
     }
 
-    const tickets = await prisma.ticket.findMany({
-      where,
-      orderBy: {
-        [sortField]: order,
-      },
-    });
+    const [totalCount, tickets] = await Promise.all([
+      prisma.ticket.count({ where }),
+      prisma.ticket.findMany({
+        where,
+        orderBy: {
+          [sortField]: order,
+        },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    res.json({ tickets });
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({
+      tickets,
+      totalCount,
+      page: pageNum,
+      pageSize: limit,
+      totalPages,
+    });
   } catch (error) {
     console.error("Error fetching tickets:", error);
     res.status(500).json({ error: "Failed to fetch tickets" });
