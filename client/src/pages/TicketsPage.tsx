@@ -114,6 +114,29 @@ export default function TicketsPage() {
     },
   });
 
+  // Mutation to update ticket status or category
+  const updateTicketMutation = useMutation({
+    mutationFn: async ({
+      ticketId,
+      status,
+      category,
+    }: {
+      ticketId: number;
+      status?: string;
+      category?: string | null;
+    }) => {
+      const res = await axios.patch(
+        `${API_URL}/api/tickets/${ticketId}`,
+        { status, category },
+        { withCredentials: true }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+
   // Extract active sort field and direction for server-side query
   const activeSort = sorting[0];
   const sortBy = activeSort ? activeSort.id : "id";
@@ -200,39 +223,62 @@ export default function TicketsPage() {
     columnHelper.accessor("category", {
       header: "Category",
       cell: (info) => {
-        const val = info.getValue();
-        return val ? (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-            {val}
-          </span>
-        ) : (
-          <span className="text-xs text-gray-400 italic">Uncategorized</span>
+        const ticket = info.row.original;
+        const category = ticket.category || "";
+
+        return (
+          <select
+            value={category}
+            onChange={(e) => {
+              const newCategory = e.target.value || null;
+              updateTicketMutation.mutate({ ticketId: ticket.id, category: newCategory });
+            }}
+            className="border border-purple-200 rounded px-2.5 py-1 bg-purple-50 text-xs font-medium text-purple-700 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-sm"
+          >
+            <option value="">Uncategorized</option>
+            <option value={TicketCategory.GENERAL_QUESTION}>{TicketCategory.GENERAL_QUESTION}</option>
+            <option value={TicketCategory.TECHNICAL_QUESTION}>{TicketCategory.TECHNICAL_QUESTION}</option>
+            <option value={TicketCategory.REFUND_REQUEST}>{TicketCategory.REFUND_REQUEST}</option>
+          </select>
         );
       },
     }),
     columnHelper.accessor("status", {
       header: "Status",
       cell: (info) => {
-        const status = info.getValue();
-        let badgeStyle = "bg-gray-100 text-gray-800 border-gray-200";
-        switch (status.toLowerCase()) {
+        const ticket = info.row.original;
+        const status = ticket.status.toLowerCase();
+
+        let selectBadgeStyle = "bg-gray-100 text-gray-800 border-gray-200";
+        switch (status) {
           case TicketStatus.OPEN:
-            badgeStyle = "bg-blue-100 text-blue-800 border-blue-200";
+            selectBadgeStyle = "bg-blue-100 text-blue-800 border-blue-200";
             break;
           case TicketStatus.IN_PROGRESS:
-            badgeStyle = "bg-amber-100 text-amber-800 border-amber-200";
+            selectBadgeStyle = "bg-amber-100 text-amber-800 border-amber-200";
             break;
           case TicketStatus.RESOLVED:
-            badgeStyle = "bg-emerald-100 text-emerald-800 border-emerald-200";
+            selectBadgeStyle = "bg-emerald-100 text-emerald-800 border-emerald-200";
             break;
           case TicketStatus.CLOSED:
-            badgeStyle = "bg-gray-100 text-gray-700 border-gray-200";
+            selectBadgeStyle = "bg-gray-100 text-gray-700 border-gray-200";
             break;
         }
+
         return (
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeStyle}`}>
-            {status.toUpperCase()}
-          </span>
+          <select
+            value={status}
+            onChange={(e) => {
+              const newStatus = e.target.value;
+              updateTicketMutation.mutate({ ticketId: ticket.id, status: newStatus });
+            }}
+            className={`border rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm ${selectBadgeStyle}`}
+          >
+            <option value={TicketStatus.OPEN}>OPEN</option>
+            <option value={TicketStatus.IN_PROGRESS}>IN_PROGRESS</option>
+            <option value={TicketStatus.RESOLVED}>RESOLVED</option>
+            <option value={TicketStatus.CLOSED}>CLOSED</option>
+          </select>
         );
       },
     }),

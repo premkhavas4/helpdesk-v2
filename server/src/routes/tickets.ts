@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../auth.js";
-import { createTicketFromEmailSchema, TicketStatus } from "../../../core/src/schemas/ticket.js";
+import { createTicketFromEmailSchema, TicketStatus, TicketCategory } from "../../../core/src/schemas/ticket.js";
 
 const router = Router();
 
@@ -287,8 +287,32 @@ router.patch("/:id", async (req, res) => {
 
     const updateData: any = {};
 
-    if (status !== undefined) updateData.status = status;
-    if (category !== undefined) updateData.category = category;
+    if (status !== undefined) {
+      const allowedStatuses = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.RESOLVED, TicketStatus.CLOSED];
+      const normalizedStatus = typeof status === "string" ? status.toLowerCase() : "";
+      if (!allowedStatuses.includes(normalizedStatus as any)) {
+        res.status(400).json({ error: "Invalid ticket status" });
+        return;
+      }
+      updateData.status = normalizedStatus;
+    }
+
+    if (category !== undefined) {
+      if (category !== null && category !== "") {
+        const allowedCategories = [
+          TicketCategory.GENERAL_QUESTION,
+          TicketCategory.TECHNICAL_QUESTION,
+          TicketCategory.REFUND_REQUEST,
+        ];
+        if (!allowedCategories.includes(category)) {
+          res.status(400).json({ error: "Invalid ticket category" });
+          return;
+        }
+        updateData.category = category;
+      } else {
+        updateData.category = null;
+      }
+    }
 
     if (rawAssignedTo !== undefined) {
       const assignedToIdValue = typeof rawAssignedTo === "string" && rawAssignedTo.trim() !== "" ? rawAssignedTo.trim() : null;
