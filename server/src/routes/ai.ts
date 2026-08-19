@@ -83,4 +83,52 @@ function enhanceDraftFallback(draft: string, customerFirstName?: string): string
   return text;
 }
 
+// ── POST /api/ai/summarize ──────────────────────────────────────────
+// Summarizes a ticket and its conversation thread history using AI model
+router.post("/summarize", async (req, res) => {
+  try {
+    const { ticketSubject, ticketBody, replies } = req.body;
+
+    const formattedReplies = Array.isArray(replies) && replies.length > 0
+      ? replies
+          .map((r: any, idx: number) => `Reply #${idx + 1} [${r.senderType || "agent"}]: ${r.message || ""}`)
+          .join("\n")
+      : "No replies yet.";
+
+    if (apiKey && apiKey.trim() !== "") {
+      try {
+        const { text } = await generateText({
+          model: google("gemini-1.5-flash"),
+          system:
+            "You are an expert customer support assistant. Provide a concise, clear 2-3 bullet point summary of the ticket issue and its conversation thread history. Focus on the main customer problem and the latest status/updates.",
+          prompt: `Ticket Subject: ${ticketSubject || "N/A"}\nTicket Body: ${ticketBody || "N/A"}\n\nConversation History:\n${formattedReplies}`,
+        });
+
+        if (text && text.trim()) {
+          res.json({ summary: text.trim() });
+          return;
+        }
+      } catch (aiError) {
+        console.warn("Vercel AI SDK / Gemini summarize call failed, using fallback:", aiError);
+      }
+    }
+
+    const summaryFallback = generateSummaryFallback(ticketSubject, ticketBody, replies);
+    res.json({ summary: summaryFallback });
+  } catch (error) {
+    console.error("Error summarizing ticket:", error);
+    res.status(500).json({ error: "Failed to summarize ticket" });
+  }
+});
+
+function generateSummaryFallback(subject?: string, body?: string, replies?: any[]): string {
+  let summary = `• Main Subject: ${subject || "Support Inquiry"}\n• Ticket Problem: ${body ? (body.length > 120 ? body.slice(0, 120) + "..." : body) : "N/A"}`;
+  if (Array.isArray(replies) && replies.length > 0) {
+    summary += `\n• Discussion: ${replies.length} message(s) exchanged in conversation thread.`;
+  } else {
+    summary += `\n• Discussion: No replies in conversation history yet.`;
+  }
+  return summary;
+}
+
 export default router;

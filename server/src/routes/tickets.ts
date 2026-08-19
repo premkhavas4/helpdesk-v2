@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../auth.js";
 import { createTicketFromEmailSchema, TicketStatus, TicketCategory, SenderType } from "../../../core/src/schemas/ticket.js";
 import { formatAgents } from "../../../core/src/utils/formatAgents.js";
+import { classifyTicketWithGPTNonBlocking } from "../services/aiService.js";
 
 const router = Router();
 
@@ -37,9 +38,14 @@ router.post("/inbound", async (req, res) => {
         subject,
         body,
         status: TicketStatus.OPEN,
-        category,
+        category: category || null,
       },
     });
+
+    // Automatically classify ticket asynchronously if category was not provided
+    if (!category) {
+      classifyTicketWithGPTNonBlocking(ticket.id, subject, body);
+    }
 
     res.status(201).json({
       message: "Ticket created from email successfully",
@@ -53,7 +59,7 @@ router.post("/inbound", async (req, res) => {
 
 // ── POST /api/webhooks/email ────────────────────────────────────────
 // Alias webhook endpoint for email service integrations (SendGrid/Mailgun/etc.)
-router.post("/webhook", async (req, res) => {
+router.post(["/webhook", "/"], async (req, res) => {
   try {
     const rawPayload = {
       senderName: req.body.senderName || req.body.fromName || req.body.name,
@@ -81,9 +87,14 @@ router.post("/webhook", async (req, res) => {
         subject,
         body,
         status: TicketStatus.OPEN,
-        category,
+        category: category || null,
       },
     });
+
+    // Automatically classify ticket asynchronously if category was not provided
+    if (!category) {
+      classifyTicketWithGPTNonBlocking(ticket.id, subject, body);
+    }
 
     res.status(201).json({
       message: "Ticket created from inbound email webhook successfully",
