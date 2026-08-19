@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const TicketStatus = {
+  NEW: "new",
+  PROCESSING: "processing",
   OPEN: "open",
   IN_PROGRESS: "in_progress",
   RESOLVED: "resolved",
@@ -41,6 +43,7 @@ export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
 export const SenderType = {
   AGENT: "agent",
   CUSTOMER: "customer",
+  AI: "ai",
 } as const;
 
 export type SenderType = (typeof SenderType)[keyof typeof SenderType];

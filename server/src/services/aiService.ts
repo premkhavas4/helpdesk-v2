@@ -2,7 +2,13 @@ import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogle } from "@ai-sdk/google";
 import { prisma } from "../auth.js";
-import { TicketCategory } from "../../../core/src/schemas/ticket.js";
+import { TicketCategory, TicketStatus, SenderType } from "../../../core/src/schemas/ticket.js";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const openaiApiKey = process.env.OPENAI_API_KEY;
 const googleApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -21,29 +27,133 @@ const ALLOWED_CATEGORIES = [
   TicketCategory.REFUND_REQUEST,
 ] as const;
 
-/**
- * Classifies a ticket asynchronously in a non-blocking fashion using OpenAI GPT / AI model.
- * Updates the ticket's category field in the database once classification completes.
- */
-export function classifyTicketWithGPTNonBlocking(ticketId: number, subject: string, body: string): void {
-  // Use setImmediate to ensure execution happens asynchronously outside the current HTTP event loop tick
-  setImmediate(() => {
-    classifyAndSave(ticketId, subject, body).catch((err) => {
-      console.error(`[AI Classifier] Background error classifying ticket #${ticketId}:`, err);
-    });
-  });
+interface KBArticle {
+  id: string;
+  title: string;
+  keywords: string[];
+  content: string;
 }
 
-export async function classifyAndSave(ticketId: number, subject: string, body: string): Promise<void> {
-  const category = await classifyTicketCategory(subject, body);
-  
-  if (category) {
+function loadKnowledgeBase(): KBArticle[] {
+  try {
+    const kbPath = path.join(__dirname, "../config/knowledgeBase.json");
+    if (fs.existsSync(kbPath)) {
+      const data = fs.readFileSync(kbPath, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("[AI Service] Failed to load knowledge base file:", err);
+  }
+  return [];
+}
+
+/**
+ * Main worker function to process incoming tickets:
+ * 1. Move status from 'new' -> 'processing'
+ * 2. Attempt Knowledge Base auto-resolution
+ * 3. If resolved -> add AI reply, set status = 'resolved'
+ * 4. If unresolved -> set category, set status = 'open'
+ */
+export async function processTicketWithAI(ticketId: number, subject: string, body: string): Promise<void> {
+  try {
+    // 1. Mark ticket as 'processing'
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: { category },
+      data: { status: TicketStatus.PROCESSING },
     });
-    console.log(`[AI Classifier] Ticket #${ticketId} classified as "${category}"`);
+    console.log(`[AI Engine] Ticket #${ticketId} status updated to "${TicketStatus.PROCESSING}"`);
+
+    // 2. Check Knowledge Base for auto-resolution
+    const kbArticles = loadKnowledgeBase();
+    const resolution = await matchKnowledgeBase(subject, body, kbArticles);
+
+    const category = (await classifyTicketCategory(subject, body)) || TicketCategory.GENERAL_QUESTION;
+
+    if (resolution) {
+      // Extract customer's first name
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { senderName: true },
+      });
+      const rawName = ticket?.senderName || "there";
+      const firstName = rawName.trim().split(/\s+/)[0] || "there";
+
+      const formattedMessage = formatCustomerFriendlyReply(firstName, resolution.answer);
+
+      // 3. Auto-resolve with AI reply
+      await prisma.ticketReply.create({
+        data: {
+          ticketId,
+          senderType: SenderType.AI,
+          message: formattedMessage,
+          sentAt: new Date(),
+        },
+      });
+
+      await prisma.ticket.update({
+        where: { id: ticketId },
+        data: {
+          status: TicketStatus.RESOLVED,
+          category,
+        },
+      });
+
+      console.log(`[AI Engine] Ticket #${ticketId} AUTO-RESOLVED using KB article "${resolution.articleId}"`);
+      return;
+    }
+
+    // 4. Could not auto-resolve -> Mark as 'open' for agent queue
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        status: TicketStatus.OPEN,
+        category,
+      },
+    });
+
+    console.log(`[AI Engine] Ticket #${ticketId} categorized as "${category}" and moved to "${TicketStatus.OPEN}" queue`);
+  } catch (err) {
+    console.error(`[AI Engine] Error processing ticket #${ticketId}:`, err);
+    // On error, fallback ticket to 'open' status
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: TicketStatus.OPEN },
+    }).catch(() => {});
   }
+}
+
+/**
+ * Formats automated KB responses with a polite greeting addressing customer by first name
+ * and signs off with Code with Mosh Support.
+ */
+function formatCustomerFriendlyReply(firstName: string, answerText: string): string {
+  let cleanAnswer = answerText.trim();
+
+  // If the answer already contains a greeting, clean it or format around it
+  const hasGreeting = /^(hi|hello|dear)\b/i.test(cleanAnswer);
+  const greeting = hasGreeting ? "" : `Hi ${firstName},\n\nThank you for reaching out to us!\n\n`;
+
+  const hasSignOff = /code with mosh support/i.test(cleanAnswer);
+  const signOff = hasSignOff
+    ? ""
+    : `\n\nIf you have any further questions or need additional assistance, please feel free to reach out to us.\n\nBest regards,\nCode with Mosh Support`;
+
+  return `${greeting}${cleanAnswer}${signOff}`;
+}
+
+/**
+ * Backwards compatible alias for classifyAndSave
+ */
+export async function classifyAndSave(ticketId: number, subject: string, body: string): Promise<void> {
+  return processTicketWithAI(ticketId, subject, body);
+}
+
+export function classifyTicketWithGPTNonBlocking(ticketId: number, subject: string, body: string): void {
+  setImmediate(() => {
+    processTicketWithAI(ticketId, subject, body).catch((err) => {
+      console.error(`[AI Classifier] Background error processing ticket #${ticketId}:`, err);
+    });
+  });
 }
 
 export async function classifyTicketCategory(subject: string, body: string): Promise<string> {
@@ -74,7 +184,7 @@ Respond ONLY with the exact category string (e.g. "General question", "Technical
   if (googleApiKey && googleApiKey.trim() !== "") {
     try {
       const { text } = await generateText({
-        model: google("gemini-2.0-flash"),
+        model: google("gemini-1.5-pro"),
         system: `You are an automated ticket classification assistant. Categorize customer support tickets into EXACTLY ONE of these categories:
 1. "General question"
 2. "Technical question"
@@ -115,4 +225,98 @@ function fallbackKeywordClassifier(subject: string, body: string): string {
   }
 
   return TicketCategory.GENERAL_QUESTION;
+}
+
+interface KBResult {
+  articleId: string;
+  answer: string;
+}
+
+async function matchKnowledgeBase(
+  subject: string,
+  body: string,
+  articles: KBArticle[]
+): Promise<KBResult | null> {
+  if (!articles || articles.length === 0) return null;
+
+  const combinedText = `Subject: ${subject}\nBody: ${body}`;
+  const textLower = combinedText.toLowerCase();
+
+  // Try AI matching if OpenAI or Gemini is available
+  if (openaiApiKey && openaiApiKey.trim() !== "") {
+    try {
+      const articlesContext = articles
+        .map((a) => `ID: ${a.id}\nTitle: ${a.title}\nContent: ${a.content}`)
+        .join("\n\n");
+
+      const { text } = await generateText({
+        model: openai("gpt-4o-mini"),
+        system: `You are an expert customer support AI. Analyze the customer support ticket and the Knowledge Base articles.
+Determine if one of the Knowledge Base articles directly and completely answers the customer's question.
+
+Knowledge Base Articles:
+${articlesContext}
+
+If an article completely answers the ticket, respond with JSON ONLY in this format:
+{"canResolve": true, "articleId": "<ID>", "answer": "<Comprehensive helpful response derived from the KB article>"}
+
+If none of the articles answer the ticket, respond with JSON ONLY:
+{"canResolve": false}`,
+        prompt: combinedText,
+      });
+
+      const parsed = parseJSONSafe(text);
+      if (parsed?.canResolve && parsed.articleId && parsed.answer) {
+        return { articleId: parsed.articleId, answer: parsed.answer };
+      }
+    } catch (err) {
+      console.warn("[AI Engine] OpenAI KB resolution failed, trying keyword fallback:", err);
+    }
+  }
+
+  if (googleApiKey && googleApiKey.trim() !== "") {
+    try {
+      const articlesContext = articles
+        .map((a) => `ID: ${a.id}\nTitle: ${a.title}\nContent: ${a.content}`)
+        .join("\n\n");
+
+      const { text } = await generateText({
+        model: google("gemini-1.5-pro"),
+        system: `Analyze ticket and KB articles. If an article directly answers the inquiry, reply with JSON: {"canResolve": true, "articleId": "<ID>", "answer": "<response>"}. Otherwise reply {"canResolve": false}.
+
+Knowledge Base:
+${articlesContext}`,
+        prompt: combinedText,
+      });
+
+      const parsed = parseJSONSafe(text);
+      if (parsed?.canResolve && parsed.articleId && parsed.answer) {
+        return { articleId: parsed.articleId, answer: parsed.answer };
+      }
+    } catch (err) {
+      console.warn("[AI Engine] Gemini KB resolution failed, trying keyword fallback:", err);
+    }
+  }
+
+  // Keyword Matching Fallback
+  for (const article of articles) {
+    const matchedCount = article.keywords.filter((kw) => textLower.includes(kw.toLowerCase())).length;
+    if (matchedCount >= 2 || (article.keywords.length === 1 && matchedCount === 1)) {
+      return {
+        articleId: article.id,
+        answer: article.content,
+      };
+    }
+  }
+
+  return null;
+}
+
+function parseJSONSafe(text: string): any {
+  try {
+    const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    return null;
+  }
 }

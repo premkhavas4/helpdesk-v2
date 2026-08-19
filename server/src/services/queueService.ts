@@ -1,5 +1,5 @@
 import { PgBoss } from "pg-boss";
-import { classifyAndSave, classifyTicketWithGPTNonBlocking } from "./aiService.js";
+import { processTicketWithAI, classifyTicketWithGPTNonBlocking } from "./aiService.js";
 
 const QUEUE_NAME = "classify-ticket";
 let boss: PgBoss | null = null;
@@ -24,6 +24,8 @@ export async function startQueue(): Promise<void> {
     isStarted = true;
     console.log("✓ pg-boss background job queue started successfully");
 
+    await boss.createQueue(QUEUE_NAME).catch(() => {});
+
     // Register job subscription/worker
     await boss.work<{ ticketId: number; subject: string; body: string }>(
       QUEUE_NAME,
@@ -31,7 +33,7 @@ export async function startQueue(): Promise<void> {
         for (const job of jobs) {
           const { ticketId, subject, body } = job.data;
           console.log(`[pg-boss Worker] Processing job #${job.id} for ticket #${ticketId}`);
-          await classifyAndSave(ticketId, subject, body);
+          await processTicketWithAI(ticketId, subject, body);
         }
       }
     );

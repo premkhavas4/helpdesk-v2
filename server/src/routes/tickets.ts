@@ -30,22 +30,20 @@ router.post("/inbound", async (req, res) => {
 
     const { senderName, senderEmail, subject, body, category } = validation.data;
 
-    // Create ticket in database
+    // Create ticket in database with initial status 'new'
     const ticket = await prisma.ticket.create({
       data: {
         senderName,
         senderEmail,
         subject,
         body,
-        status: TicketStatus.OPEN,
+        status: TicketStatus.NEW,
         category: category || null,
       },
     });
 
-    // Enqueue ticket classification job into pg-boss background queue
-    if (!category) {
-      enqueueTicketClassification(ticket.id, subject, body);
-    }
+    // Enqueue ticket classification & auto-resolution job into pg-boss background queue
+    enqueueTicketClassification(ticket.id, subject, body);
 
     res.status(201).json({
       message: "Ticket created from email successfully",
@@ -86,15 +84,13 @@ router.post(["/webhook", "/"], async (req, res) => {
         senderEmail,
         subject,
         body,
-        status: TicketStatus.OPEN,
+        status: TicketStatus.NEW,
         category: category || null,
       },
     });
 
-    // Enqueue ticket classification job into pg-boss background queue
-    if (!category) {
-      enqueueTicketClassification(ticket.id, subject, body);
-    }
+    // Enqueue ticket classification & auto-resolution job into pg-boss background queue
+    enqueueTicketClassification(ticket.id, subject, body);
 
     res.status(201).json({
       message: "Ticket created from inbound email webhook successfully",
@@ -123,6 +119,9 @@ router.get("/", async (req, res) => {
     const where: any = {};
     if (typeof status === "string" && status.trim() !== "" && status !== "all") {
       where.status = status;
+    } else {
+      // By default, exclude new/processing/resolved AI tickets from the main agent queue
+      where.status = { notIn: [TicketStatus.NEW, TicketStatus.PROCESSING, TicketStatus.RESOLVED] };
     }
     if (typeof category === "string" && category.trim() !== "" && category !== "all") {
       where.category = category;

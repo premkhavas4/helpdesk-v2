@@ -420,7 +420,9 @@ export default function TicketsPage() {
               onChange={(e) => handleStatusChange(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">Active Queue (Open & In Progress)</option>
+              <option value={TicketStatus.NEW}>New</option>
+              <option value={TicketStatus.PROCESSING}>Processing</option>
               <option value={TicketStatus.OPEN}>Open</option>
               <option value={TicketStatus.IN_PROGRESS}>In Progress</option>
               <option value={TicketStatus.RESOLVED}>Resolved</option>

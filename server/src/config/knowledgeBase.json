@@ -1,0 +1,26 @@
+[
+  {
+    "id": "kb-001",
+    "title": "Business Hours & Operations",
+    "keywords": ["hours", "open", "timing", "schedule", "weekend", "business hours", "operating hours"],
+    "content": "Our support team is available Monday through Friday from 9:00 AM to 6:00 PM EST. On weekends, emergency support is available for critical server outages."
+  },
+  {
+    "id": "kb-002",
+    "title": "Account Setup & Team Invitations",
+    "keywords": ["account setup", "invite", "new user", "registration", "sign up", "add team member"],
+    "content": "To set up a new account or invite team members to your organization, navigate to Admin Settings -> User Management -> Invite User. Enter their email address and select their assigned role."
+  },
+  {
+    "id": "kb-003",
+    "title": "Refund Policy & Billing Queries",
+    "keywords": ["refund", "money back", "billing", "cancel subscription", "invoice", "payment", "charge"],
+    "content": "Refund requests are processed within 5 to 7 business days under our 30-day satisfaction guarantee. To request a refund, please specify your order or invoice number in your message."
+  },
+  {
+    "id": "kb-004",
+    "title": "Password Reset & Login Assistance",
+    "keywords": ["password", "reset password", "forgot password", "login issue", "cannot log in", "cant login"],
+    "content": "If you forgot your password, click on 'Forgot Password' on the login page and enter your registered email address. You will receive a secure password reset link valid for 24 hours."
+  }
+]
