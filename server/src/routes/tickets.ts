@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../auth.js";
 import { createTicketFromEmailSchema, TicketStatus, TicketCategory, SenderType } from "../../../core/src/schemas/ticket.js";
 import { formatAgents } from "../../../core/src/utils/formatAgents.js";
-import { classifyTicketWithGPTNonBlocking } from "../services/aiService.js";
+import { enqueueTicketClassification } from "../services/queueService.js";
 
 const router = Router();
 
@@ -42,9 +42,9 @@ router.post("/inbound", async (req, res) => {
       },
     });
 
-    // Automatically classify ticket asynchronously if category was not provided
+    // Enqueue ticket classification job into pg-boss background queue
     if (!category) {
-      classifyTicketWithGPTNonBlocking(ticket.id, subject, body);
+      enqueueTicketClassification(ticket.id, subject, body);
     }
 
     res.status(201).json({
@@ -91,9 +91,9 @@ router.post(["/webhook", "/"], async (req, res) => {
       },
     });
 
-    // Automatically classify ticket asynchronously if category was not provided
+    // Enqueue ticket classification job into pg-boss background queue
     if (!category) {
-      classifyTicketWithGPTNonBlocking(ticket.id, subject, body);
+      enqueueTicketClassification(ticket.id, subject, body);
     }
 
     res.status(201).json({

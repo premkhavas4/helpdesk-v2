@@ -126,9 +126,12 @@ async function ensureDefaultAdmin() {
   }
 }
 
+import { startQueue } from "./services/queueService.js";
+
 // ── Start server ────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  ensureDefaultAdmin();
+  await ensureDefaultAdmin();
+  await startQueue();
 });

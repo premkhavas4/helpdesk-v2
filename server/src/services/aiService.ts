@@ -34,7 +34,7 @@ export function classifyTicketWithGPTNonBlocking(ticketId: number, subject: stri
   });
 }
 
-async function classifyAndSave(ticketId: number, subject: string, body: string): Promise<void> {
+export async function classifyAndSave(ticketId: number, subject: string, body: string): Promise<void> {
   const category = await classifyTicketCategory(subject, body);
   
   if (category) {
@@ -74,7 +74,7 @@ Respond ONLY with the exact category string (e.g. "General question", "Technical
   if (googleApiKey && googleApiKey.trim() !== "") {
     try {
       const { text } = await generateText({
-        model: google("gemini-1.5-flash"),
+        model: google("gemini-2.0-flash"),
         system: `You are an automated ticket classification assistant. Categorize customer support tickets into EXACTLY ONE of these categories:
 1. "General question"
 2. "Technical question"
