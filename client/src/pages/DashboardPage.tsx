@@ -42,11 +42,11 @@ export default function DashboardPage() {
   const maxDailyCount = dailyTickets.reduce((max, d) => Math.max(max, d.count), 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] p-6 md:p-10 font-sans text-slate-800 dark:text-slate-100 transition-colors">
       {/* Header Bar */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2.5 rounded-2xl shadow-md">
               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -54,7 +54,7 @@ export default function DashboardPage() {
             </span>
             Helpdesk Analytics Dashboard
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Real-time insights on ticket volume, AI auto-resolutions, and support performance.
           </p>
         </div>

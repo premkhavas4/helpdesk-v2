@@ -6,9 +6,9 @@
   "private": true,
   "scripts": {
     "dev": "tsx src/index.ts",
-    "start": "tsx src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "test:e2e": "bunx playwright test"
+    "start": "prisma db push && tsx src/index.ts",
+    "build": "prisma generate",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "latest",
@@ -26,6 +26,7 @@
     "@ai-sdk/openai": "^4.0.42",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@sentry/node": "^10.70.0",
     "@types/mailparser": "^3.4.6",
     "@types/nodemailer": "^8.0.1",
     "ai": "^7.0.66",

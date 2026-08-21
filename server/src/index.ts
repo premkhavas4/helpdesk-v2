@@ -1,3 +1,6 @@
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -7,6 +10,14 @@ import { auth, prisma } from "./auth.js";
 import usersRouter from "./routes/users.js";
 import ticketsRouter from "./routes/tickets.js";
 import aiRouter from "./routes/ai.js";
+
+import { initSentry, Sentry } from "./sentry.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Sentry error tracking
+initSentry();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -109,6 +120,19 @@ app.use("/api/tickets", ticketsRouter);
 app.use("/api/webhooks/email", ticketsRouter);
 app.use("/api/ai", aiRouter);
 
+// ── Serve Production Client Static Assets ────────────────────────────
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
+if (fs.existsSync(clientDistPath)) {
+  console.log(`✓ Serving static client assets from ${clientDistPath}`);
+  app.use(express.static(clientDistPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/health")) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+}
+
 export const AI_AGENT_EMAIL = "ai.agent@helpdesk.local";
 
 export async function ensureDefaultAIAgent() {
@@ -182,6 +206,9 @@ async function ensureDefaultAdmin() {
 import { startQueue } from "./services/queueService.js";
 import { ensureStoredFunctions } from "./config/ensureStoredFunctions.js";
 import { startEmailListener } from "./services/emailListenerService.js";
+
+// ── Sentry Error Handler ────────────────────────────────────────────
+Sentry.setupExpressErrorHandler(app);
 
 // ── Start server ────────────────────────────────────────────────────
 
