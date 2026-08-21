@@ -5,8 +5,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "npx tsx watch --ignore \"node_modules/**\" src/index.ts",
-    "start": "npx tsx src/index.ts",
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "test:e2e": "bunx playwright test"
   },
@@ -15,7 +15,8 @@
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -25,12 +26,17 @@
     "@ai-sdk/openai": "^4.0.42",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@types/mailparser": "^3.4.6",
+    "@types/nodemailer": "^8.0.1",
     "ai": "^7.0.66",
     "better-auth": "^1.6.27",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^7.2.0",
+    "imapflow": "^1.7.1",
+    "mailparser": "^3.9.15",
+    "nodemailer": "^9.0.5",
     "pg": "^8.23.0",
     "pg-boss": "^12.27.0",
     "prisma": "^7.9.1"

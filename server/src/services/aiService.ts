@@ -56,12 +56,12 @@ function loadKnowledgeBase(): KBArticle[] {
  */
 export async function processTicketWithAI(ticketId: number, subject: string, body: string): Promise<void> {
   try {
-    // 1. Mark ticket as 'processing'
-    await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { status: TicketStatus.PROCESSING },
-    });
-    console.log(`[AI Engine] Ticket #${ticketId} status updated to "${TicketStatus.PROCESSING}"`);
+    const aiUser = await prisma.user.findUnique({ where: { email: "ai.agent@helpdesk.local" } });
+    const aiAgentId = aiUser?.id || "ai-agent-system-id";
+
+    // 1. Mark ticket status as 'processing' via PostgreSQL stored function
+    await prisma.$queryRaw`SELECT compute_ticket_status(${ticketId}, 'start_processing', NULL, ${aiAgentId})`;
+    console.log(`[AI Engine] Ticket #${ticketId} status updated via stored function to "processing"`);
 
     // 2. Check Knowledge Base for auto-resolution
     const kbArticles = loadKnowledgeBase();
@@ -80,7 +80,7 @@ export async function processTicketWithAI(ticketId: number, subject: string, bod
 
       const formattedMessage = formatCustomerFriendlyReply(firstName, resolution.answer);
 
-      // 3. Auto-resolve with AI reply
+      // 3. Auto-resolve with AI reply and compute status via stored function
       await prisma.ticketReply.create({
         data: {
           ticketId,
@@ -90,35 +90,20 @@ export async function processTicketWithAI(ticketId: number, subject: string, bod
         },
       });
 
-      await prisma.ticket.update({
-        where: { id: ticketId },
-        data: {
-          status: TicketStatus.RESOLVED,
-          category,
-        },
-      });
+      await prisma.$queryRaw`SELECT compute_ticket_status(${ticketId}, 'auto_resolve', ${category}, ${aiAgentId})`;
 
-      console.log(`[AI Engine] Ticket #${ticketId} AUTO-RESOLVED using KB article "${resolution.articleId}"`);
+      console.log(`[AI Engine] Ticket #${ticketId} AUTO-RESOLVED via stored function using KB article "${resolution.articleId}"`);
       return;
     }
 
-    // 4. Could not auto-resolve -> Mark as 'open' for agent queue
-    await prisma.ticket.update({
-      where: { id: ticketId },
-      data: {
-        status: TicketStatus.OPEN,
-        category,
-      },
-    });
+    // 4. Could not auto-resolve -> Unassign from AI Agent and compute status as 'open' via stored function
+    await prisma.$queryRaw`SELECT compute_ticket_status(${ticketId}, 'unassign_open', ${category}, NULL)`;
 
-    console.log(`[AI Engine] Ticket #${ticketId} categorized as "${category}" and moved to "${TicketStatus.OPEN}" queue`);
+    console.log(`[AI Engine] Ticket #${ticketId} categorized as "${category}", status computed as "open" via stored function`);
   } catch (err) {
     console.error(`[AI Engine] Error processing ticket #${ticketId}:`, err);
-    // On error, fallback ticket to 'open' status
-    await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { status: TicketStatus.OPEN },
-    }).catch(() => {});
+    // On error, compute fallback ticket status to 'open' via stored function
+    await prisma.$queryRaw`SELECT compute_ticket_status(${ticketId}, 'error_open', NULL, NULL)`.catch(() => {});
   }
 }
 
@@ -184,7 +169,7 @@ Respond ONLY with the exact category string (e.g. "General question", "Technical
   if (googleApiKey && googleApiKey.trim() !== "") {
     try {
       const { text } = await generateText({
-        model: google("gemini-1.5-pro"),
+        model: google("gemini-1.5-flash-latest"),
         system: `You are an automated ticket classification assistant. Categorize customer support tickets into EXACTLY ONE of these categories:
 1. "General question"
 2. "Technical question"
@@ -281,7 +266,7 @@ If none of the articles answer the ticket, respond with JSON ONLY:
         .join("\n\n");
 
       const { text } = await generateText({
-        model: google("gemini-1.5-pro"),
+        model: google("gemini-1.5-flash-latest"),
         system: `Analyze ticket and KB articles. If an article directly answers the inquiry, reply with JSON: {"canResolve": true, "articleId": "<ID>", "answer": "<response>"}. Otherwise reply {"canResolve": false}.
 
 Knowledge Base:

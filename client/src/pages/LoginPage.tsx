@@ -29,11 +29,11 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const success = await login(data.email, data.password);
-      if (success) {
+      const errorMsg = await login(data.email, data.password);
+      if (!errorMsg) {
         navigate("/dashboard");
       } else {
-        setAuthError("Invalid email or password");
+        setAuthError(errorMsg);
       }
     } catch {
       setAuthError("Something went wrong. Please try again.");

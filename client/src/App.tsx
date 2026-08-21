@@ -68,11 +68,14 @@ function AppHeader() {
         <Link to="/" className="text-2xl font-bold">
           Helpdesk
         </Link>
-        <Link to="/tickets" className="ml-4 text-blue-700 hover:underline">
+        <Link to="/dashboard" className="ml-4 text-blue-700 font-medium hover:underline">
+          Dashboard
+        </Link>
+        <Link to="/tickets" className="ml-4 text-blue-700 font-medium hover:underline">
           Tickets
         </Link>
         {user?.role?.toLowerCase() === "admin" && (
-          <Link to="/users" className="ml-4 text-blue-700 hover:underline">
+          <Link to="/users" className="ml-4 text-blue-700 font-medium hover:underline">
             Users
           </Link>
         )}

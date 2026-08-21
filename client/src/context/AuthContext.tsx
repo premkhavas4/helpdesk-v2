@@ -12,7 +12,7 @@ export interface AuthUser {
 export interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -20,7 +20,7 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => false,
+  login: async () => "Auth not ready",
   logout: async () => {},
   refreshSession: async () => {},
 });
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<string | null> => {
     try {
       const res = await fetch(`${API_URL}/api/auth/sign-in/email`, {
         method: "POST",
@@ -96,12 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) return false;
+      if (!res.ok) {
+        try {
+          const errData = await res.json();
+          if (errData?.message) return errData.message;
+          if (errData?.error) return errData.error;
+        } catch {}
+        return "Invalid email or password";
+      }
 
       await refreshSession();
-      return true;
+      return null;
     } catch {
-      return false;
+      return "Unable to connect to backend server.";
     }
   };
 

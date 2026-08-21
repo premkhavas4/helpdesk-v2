@@ -109,7 +109,6 @@ export default function TicketDetailPage() {
   });
 
   const [replyMessage, setReplyMessage] = useState("");
-  const [senderType, setSenderType] = useState<"agent" | "customer">("agent");
   const [isPolishing, setIsPolishing] = useState(false);
 
   const handlePolishReply = async () => {
@@ -151,7 +150,7 @@ export default function TicketDetailPage() {
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyMessage.trim()) return;
-    addReplyMutation.mutate({ message: replyMessage.trim(), senderType });
+    addReplyMutation.mutate({ message: replyMessage.trim(), senderType: "agent" });
   };
 
   if (isLoading) {
@@ -285,32 +284,6 @@ export default function TicketDetailPage() {
                 <label htmlFor="replyInput" className="text-xs text-gray-500 font-semibold uppercase tracking-wider block">
                   Add a Reply
                 </label>
-
-                {/* Sender Type Selector */}
-                <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setSenderType("agent")}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                      senderType === "agent"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Agent Reply
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSenderType("customer")}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                      senderType === "customer"
-                        ? "bg-emerald-600 text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Customer Reply
-                  </button>
-                </div>
               </div>
 
               <textarea
@@ -318,11 +291,7 @@ export default function TicketDetailPage() {
                 rows={4}
                 value={replyMessage}
                 onChange={(e) => setReplyMessage(e.target.value)}
-                placeholder={
-                  senderType === "customer"
-                    ? "Type customer response here..."
-                    : "Type agent reply message here..."
-                }
+                placeholder="Type agent reply message here..."
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"
               ></textarea>
 
@@ -357,15 +326,9 @@ export default function TicketDetailPage() {
                 <button
                   type="submit"
                   disabled={!replyMessage.trim() || addReplyMutation.isPending}
-                  className={`inline-flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                    senderType === "customer"
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                  className="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {addReplyMutation.isPending
-                    ? "Sending..."
-                    : `Submit as ${senderType === "customer" ? "Customer" : "Agent"}`}
+                  {addReplyMutation.isPending ? "Sending..." : "Submit Reply"}
                 </button>
               </div>
             </form>
