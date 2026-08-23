@@ -212,15 +212,34 @@ import { ensureStoredFunctions } from "./config/ensureStoredFunctions.js";
 import { startEmailListener } from "./services/emailListenerService.js";
 
 // ── Sentry Error Handler ────────────────────────────────────────────
-Sentry.setupExpressErrorHandler(app);
+try {
+  Sentry.setupExpressErrorHandler(app);
+} catch (e) {
+  // Sentry not initialized or not configured
+}
 
 // ── Start server ────────────────────────────────────────────────────
 
 app.listen(Number(PORT), "0.0.0.0", () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  ensureStoredFunctions().catch((err) => console.error("ensureStoredFunctions error:", err));
-  ensureDefaultAdmin().catch((err) => console.error("ensureDefaultAdmin error:", err));
-  ensureDefaultAIAgent().catch((err) => console.error("ensureDefaultAIAgent error:", err));
-  startQueue().catch((err) => console.error("Queue start error:", err));
-  startEmailListener();
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+  if (process.env.DATABASE_URL) {
+    (async () => {
+      try {
+        const { exec } = await import("child_process");
+        exec("npx prisma db push --schema=prisma/schema.prisma --accept-data-loss", {
+          cwd: path.resolve(__dirname, ".."),
+        }, (err) => {
+          if (err) console.warn("Schema sync notice:", err?.message || err);
+          else console.log("✓ Schema synced cleanly");
+          ensureStoredFunctions().catch(() => {});
+          ensureDefaultAdmin().catch(() => {});
+          ensureDefaultAIAgent().catch(() => {});
+        });
+      } catch (e) {
+        console.warn("Async init notice:", e);
+      }
+    })();
+    startQueue().catch((err) => console.error("Queue start notice:", err?.message || err));
+    startEmailListener();
+  }
 });

@@ -16,5 +16,5 @@ RUN npm run build
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Run prisma db push before launching Express server
-CMD ["sh", "-c", "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && npx tsx server/src/index.ts"]
+# Start Express server immediately on container launch
+CMD ["npx", "tsx", "server/src/index.ts"]

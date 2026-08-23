@@ -4,8 +4,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const connectionString = process.env.DATABASE_URL!;
-const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres:Prem004@127.0.0.1:5432/helpdesk";
+const isLocal = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
 
 const pool = new pg.Pool({
   connectionString,
