@@ -216,19 +216,8 @@ Sentry.setupExpressErrorHandler(app);
 
 // ── Start server ────────────────────────────────────────────────────
 
-app.listen(Number(PORT), "0.0.0.0", async () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  try {
-    const { execSync } = await import("child_process");
-    console.log("Syncing database schema...");
-    execSync("npx prisma db push --schema=prisma/schema.prisma", {
-      cwd: path.resolve(__dirname, ".."),
-      stdio: "inherit",
-    });
-    console.log("✓ Database schema synced successfully");
-  } catch (err) {
-    console.error("Database sync notice:", err);
-  }
   ensureStoredFunctions().catch((err) => console.error("ensureStoredFunctions error:", err));
   ensureDefaultAdmin().catch((err) => console.error("ensureDefaultAdmin error:", err));
   ensureDefaultAIAgent().catch((err) => console.error("ensureDefaultAIAgent error:", err));

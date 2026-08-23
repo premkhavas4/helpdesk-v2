@@ -5,7 +5,7 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-# Install root, client, and server dependencies
+# Install dependencies for root, client, and server
 RUN npm install
 RUN npm --prefix client install
 RUN npm --prefix server install
@@ -16,5 +16,5 @@ RUN npm run build
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Start backend server
-CMD ["npx", "tsx", "server/src/index.ts"]
+# Run prisma db push before launching Express server
+CMD ["sh", "-c", "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && npx tsx server/src/index.ts"]
