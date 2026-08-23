@@ -1,20 +1,18 @@
 # Dockerfile for HELPDESK Monorepo deployment
-FROM oven/bun:1
+FROM node:20-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
 # Copy project files
 COPY . .
 
-# Generate Prisma Client
-WORKDIR /app/server
-RUN bunx prisma generate
+# Install dependencies and build client + server
+RUN npm install --include=dev
+RUN npm run build
 
+# Expose port
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd server && npx prisma db push && npx tsx src/index.ts"]
-
-
-
+# Start backend server
+CMD ["npx", "tsx", "server/src/index.ts"]
