@@ -1,11 +1,18 @@
+import pg from "pg";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
+const connectionString = process.env.DATABASE_URL!;
+const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+
+const pool = new pg.Pool({
+  connectionString,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
 });
+
+const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({ adapter });
 
