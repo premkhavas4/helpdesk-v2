@@ -16,21 +16,47 @@ const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({ adapter });
 
+function getBaseURL(): string {
+  let url = process.env.BETTER_AUTH_URL || process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL || "http://localhost:3000";
+  url = url.trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url;
+}
+
+const baseURL = getBaseURL();
+
+function getClientURL(): string {
+  let url = process.env.CLIENT_URL || baseURL;
+  url = url.trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url;
+}
+
+const clientURL = getClientURL();
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
 
-  baseURL: process.env.BETTER_AUTH_URL,
-  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL,
+  secret: process.env.BETTER_AUTH_SECRET || "helpdesk-dev-secret-change-this-123456789",
 
   emailAndPassword: {
     enabled: true,
   },
 
   trustedOrigins: [
-    process.env.CLIENT_URL || "http://localhost:5173",
+    clientURL,
+    baseURL,
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
   ],
 
   user: {
