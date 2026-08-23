@@ -11,7 +11,7 @@ async function cleanup() {
   });
 
   if (duplicates.length > 1) {
-    const keepId = duplicates[0].id;
+    const keepId = duplicates[0]!.id;
     const removeIds = duplicates.slice(1).map((t) => t.id);
 
     console.log(`Keeping Ticket #${keepId}, deleting duplicates:`, removeIds);

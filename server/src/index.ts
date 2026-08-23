@@ -15,6 +15,7 @@ import { initSentry, Sentry } from "./sentry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
 // Initialize Sentry error tracking
 initSentry();
@@ -64,6 +65,10 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 // ── Health & Info endpoints ─────────────────────────────────────────
 
 app.get("/", (_req, res) => {
+  if (fs.existsSync(clientDistPath)) {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+    return;
+  }
   res.json({
     message: "AI-Powered Helpdesk API Server is running!",
     health: "http://localhost:3000/health",
@@ -121,11 +126,10 @@ app.use("/api/webhooks/email", ticketsRouter);
 app.use("/api/ai", aiRouter);
 
 // ── Serve Production Client Static Assets ────────────────────────────
-const clientDistPath = path.resolve(__dirname, "../../client/dist");
 if (fs.existsSync(clientDistPath)) {
   console.log(`✓ Serving static client assets from ${clientDistPath}`);
   app.use(express.static(clientDistPath));
-  app.get("*", (req, res, next) => {
+  app.get("*splat", (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/health")) {
       return next();
     }
