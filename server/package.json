@@ -5,9 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "start": "prisma db push && tsx src/index.ts",
-    "build": "prisma generate",
+    "dev": "npx tsx src/index.ts",
+    "start": "npx prisma db push && npx tsx src/index.ts",
+    "build": "npx prisma generate",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

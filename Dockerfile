@@ -14,7 +14,7 @@ RUN bunx prisma generate
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "bunx prisma db push && bun start"]
+CMD ["sh", "-c", "cd server && npx prisma db push && npx tsx src/index.ts"]
 
 
 
