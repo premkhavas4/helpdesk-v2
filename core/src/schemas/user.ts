@@ -8,7 +8,7 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const createUserSchema = z.object({
-  name: z.string().refine((val) => val.trim() === "" || val.trim().length >= 3, {
+  name: z.string().refine((val: string) => val.trim() === "" || val.trim().length >= 3, {
     message: "Name must be at least 3 characters long.",
   }),
   email: z.string().email("Invalid email address."),
@@ -19,11 +19,11 @@ export const createUserSchema = z.object({
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 export const updateUserSchema = z.object({
-  name: z.string().refine((val) => val.trim() === "" || val.trim().length >= 3, {
+  name: z.string().refine((val: string) => val.trim() === "" || val.trim().length >= 3, {
     message: "Name must be at least 3 characters long.",
   }),
   email: z.string().email("Invalid email address."),
-  password: z.string().refine((val) => !val || val.length >= 6, {
+  password: z.string().refine((val: string) => !val || val.length >= 6, {
     message: "Password must be at least 6 characters long if provided.",
   }),
   role: z.enum([UserRole.ADMIN, UserRole.AGENT]),
