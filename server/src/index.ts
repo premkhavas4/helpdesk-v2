@@ -223,23 +223,10 @@ try {
 app.listen(Number(PORT), "0.0.0.0", () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   if (process.env.DATABASE_URL) {
-    (async () => {
-      try {
-        const { exec } = await import("child_process");
-        exec("npx prisma db push --schema=prisma/schema.prisma --accept-data-loss", {
-          cwd: path.resolve(__dirname, ".."),
-        }, (err) => {
-          if (err) console.warn("Schema sync notice:", err?.message || err);
-          else console.log("✓ Schema synced cleanly");
-          ensureStoredFunctions().catch(() => {});
-          ensureDefaultAdmin().catch(() => {});
-          ensureDefaultAIAgent().catch(() => {});
-        });
-      } catch (e) {
-        console.warn("Async init notice:", e);
-      }
-    })();
-    startQueue().catch((err) => console.error("Queue start notice:", err?.message || err));
+    ensureStoredFunctions().catch((err) => console.warn("ensureStoredFunctions notice:", err?.message || err));
+    ensureDefaultAdmin().catch((err) => console.warn("ensureDefaultAdmin notice:", err?.message || err));
+    ensureDefaultAIAgent().catch((err) => console.warn("ensureDefaultAIAgent notice:", err?.message || err));
+    startQueue().catch((err) => console.warn("Queue start notice:", err?.message || err));
     startEmailListener();
   }
 });
