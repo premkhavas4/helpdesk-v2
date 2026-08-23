@@ -2,16 +2,18 @@
 FROM node:20-alpine
 WORKDIR /app
 
-ENV NODE_ENV=production
-
 # Copy project files
 COPY . .
 
-# Install dependencies and build client + server
-RUN npm install --include=dev
+# Install root, client, and server dependencies
+RUN npm install
+RUN npm --prefix client install
+RUN npm --prefix server install
+
+# Build client and server
 RUN npm run build
 
-# Expose port
+ENV NODE_ENV=production
 EXPOSE 3000
 
 # Start backend server
