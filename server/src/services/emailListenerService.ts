@@ -19,27 +19,41 @@ export async function checkGmailInbox() {
   }
 
   const cleanUser = user.trim().replace(/^["']|["']$/g, "");
-  const cleanPass = pass.trim().replace(/\s+/g, "").replace(/^["']|["']$/g, "");
+  const passWithoutSpaces = pass.trim().replace(/\s+/g, "").replace(/^["']|["']$/g, "");
+  const passWithSpaces = pass.trim().replace(/^["']|["']$/g, "");
 
-  const client = new ImapFlow({
-    host: process.env.IMAP_HOST || "imap.gmail.com",
-    port: parseInt(process.env.IMAP_PORT || "993", 10),
-    secure: true,
-    servername: process.env.IMAP_HOST || "imap.gmail.com",
-    auth: { user: cleanUser, pass: cleanPass },
-    logger: false,
-  });
+  const createClient = (passwordToUse: string) => {
+    const c = new ImapFlow({
+      host: process.env.IMAP_HOST || "imap.gmail.com",
+      port: parseInt(process.env.IMAP_PORT || "993", 10),
+      secure: true,
+      servername: process.env.IMAP_HOST || "imap.gmail.com",
+      tls: {
+        rejectUnauthorized: false,
+        servername: process.env.IMAP_HOST || "imap.gmail.com",
+      },
+      auth: { user: cleanUser, pass: passwordToUse },
+      logger: false,
+    });
+    c.on("error", (err) => {
+      if (err?.code !== "ETIMEOUT") {
+        console.warn("[Gmail Sync Socket Notice]", err?.message || err);
+      }
+    });
+    return c;
+  };
 
-  // Handle socket timeouts & errors quietly without crashing Node process
-  client.on("error", (err) => {
-    if (err?.code !== "ETIMEOUT") {
-      console.warn("[Gmail Sync Socket Warning]", err?.message || err);
-    }
-  });
+  let client = createClient(passWithoutSpaces);
 
   try {
     console.log("[Gmail Sync] Connecting to Gmail IMAP...");
-    await client.connect();
+    try {
+      await client.connect();
+    } catch (firstErr) {
+      console.warn("[Gmail Sync] Primary login attempt failed, trying formatted password...");
+      client = createClient(passWithSpaces);
+      await client.connect();
+    }
 
     const mailboxStatus = await client.status("INBOX", { messages: true });
     const totalMessages = mailboxStatus.messages || 0;
