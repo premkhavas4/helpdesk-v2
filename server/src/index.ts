@@ -21,7 +21,7 @@ const clientDistPath = path.resolve(__dirname, "../../client/dist");
 initSentry();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // ── Middleware ───────────────────────────────────────────────────────
 
@@ -220,7 +220,7 @@ try {
 
 // ── Start server ────────────────────────────────────────────────────
 
-app.listen(Number(PORT), "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   if (process.env.DATABASE_URL) {
     ensureStoredFunctions().catch((err) => console.warn("ensureStoredFunctions notice:", err?.message || err));

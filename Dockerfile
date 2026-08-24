@@ -17,4 +17,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Start Express server immediately on container launch
-CMD ["npx", "tsx", "server/src/index.ts"]
+CMD ["npm", "start"]

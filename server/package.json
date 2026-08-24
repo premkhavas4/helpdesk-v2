@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "npx tsx src/index.ts",
-    "start": "npx prisma db push && npx tsx src/index.ts",
+    "start": "(npx prisma db push || true) && npx tsx src/index.ts",
     "build": "npx prisma generate",
     "test:e2e": "playwright test"
   },
