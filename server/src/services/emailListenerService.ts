@@ -25,10 +25,7 @@ export async function checkGmailInbox() {
     host: process.env.IMAP_HOST || "imap.gmail.com",
     port: parseInt(process.env.IMAP_PORT || "993", 10),
     secure: true,
-    tls: {
-      rejectUnauthorized: false,
-      servername: process.env.IMAP_HOST || "imap.gmail.com",
-    },
+    servername: process.env.IMAP_HOST || "imap.gmail.com",
     auth: { user: cleanUser, pass: cleanPass },
     logger: false,
   });
