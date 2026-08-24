@@ -230,3 +230,14 @@ app.listen(PORT, "0.0.0.0", () => {
     startEmailListener();
   }
 });
+
+// Dual-port binding guarantee for Railway proxy routing
+if (PORT !== 3000) {
+  try {
+    app.listen(3000, "0.0.0.0", () => {
+      console.log("✓ Fallback listener active on http://0.0.0.0:3000");
+    });
+  } catch (e) {
+    console.warn("Notice: Port 3000 fallback listener skipped (already bound).");
+  }
+}
