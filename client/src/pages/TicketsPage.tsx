@@ -139,6 +139,7 @@ export default function TicketsPage() {
       });
       return res.data || { tickets: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 0 };
     },
+    refetchInterval: 10000,
   });
 
   const tickets = data?.tickets || [];

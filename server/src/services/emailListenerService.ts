@@ -155,9 +155,7 @@ export async function checkGmailInbox() {
 
     await client.logout();
   } catch (error: any) {
-    if (!error?.message?.includes("AUTHENTICATIONFAILED")) {
-      console.warn("[Gmail Sync]", error?.message || error);
-    }
+    console.warn("[Gmail Sync Notice]", error?.message || error);
   }
 }
 
