@@ -42,7 +42,7 @@ export interface TicketsApiResponse {
   totalPages: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 const columnHelper = createColumnHelper<TicketItem>();
 
 export default function TicketsPage() {

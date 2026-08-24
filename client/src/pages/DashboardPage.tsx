@@ -18,7 +18,7 @@ export interface TicketStats {
   dailyTickets?: DailyTicketItem[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function DashboardPage() {
   const { data: stats, isLoading, error, refetch, isRefetching } = useQuery<TicketStats>({

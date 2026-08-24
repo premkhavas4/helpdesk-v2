@@ -22,7 +22,7 @@ interface TicketDetailProps {
   ticket: TicketDetailData;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export const TicketDetail: React.FC<TicketDetailProps> = ({ ticket }) => {
   const [summary, setSummary] = useState<string | null>(null);

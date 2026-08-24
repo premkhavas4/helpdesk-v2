@@ -8,7 +8,7 @@ interface User {
   created_at: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
