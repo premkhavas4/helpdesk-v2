@@ -18,13 +18,18 @@ export async function checkGmailInbox() {
     return;
   }
 
-  const cleanPass = pass.replace(/\s+/g, "");
+  const cleanUser = user.trim().replace(/^["']|["']$/g, "");
+  const cleanPass = pass.trim().replace(/\s+/g, "").replace(/^["']|["']$/g, "");
 
   const client = new ImapFlow({
     host: process.env.IMAP_HOST || "imap.gmail.com",
     port: parseInt(process.env.IMAP_PORT || "993", 10),
     secure: true,
-    auth: { user, pass: cleanPass },
+    tls: {
+      rejectUnauthorized: false,
+      servername: process.env.IMAP_HOST || "imap.gmail.com",
+    },
+    auth: { user: cleanUser, pass: cleanPass },
     logger: false,
   });
 
