@@ -109,7 +109,7 @@ export async function processTicketWithAI(ticketId: number, subject: string, bod
 
 /**
  * Formats automated KB responses with a polite greeting addressing customer by first name
- * and signs off with Code with Mosh Support.
+ * and signs off with Code with Prem Support.
  */
 function formatCustomerFriendlyReply(firstName: string, answerText: string): string {
   let cleanAnswer = answerText.trim();
@@ -118,10 +118,10 @@ function formatCustomerFriendlyReply(firstName: string, answerText: string): str
   const hasGreeting = /^(hi|hello|dear)\b/i.test(cleanAnswer);
   const greeting = hasGreeting ? "" : `Hi ${firstName},\n\nThank you for reaching out to us!\n\n`;
 
-  const hasSignOff = /code with mosh support/i.test(cleanAnswer);
+  const hasSignOff = /code with (prem|mosh) support/i.test(cleanAnswer);
   const signOff = hasSignOff
     ? ""
-    : `\n\nIf you have any further questions or need additional assistance, please feel free to reach out to us.\n\nBest regards,\nCode with Mosh Support`;
+    : `\n\nIf you have any further questions or need additional assistance, please feel free to reach out to us.\n\nBest regards,\nCode with Prem Support`;
 
   return `${greeting}${cleanAnswer}${signOff}`;
 }

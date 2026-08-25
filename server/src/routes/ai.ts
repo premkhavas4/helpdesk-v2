@@ -30,7 +30,7 @@ router.post("/polish", async (req, res) => {
         const { text } = await generateText({
           model: google("gemini-2.0-flash"),
           system:
-            "You are an expert customer support assistant. Polish and refine the support agent's draft reply. Make it polite, professional, clear, customer-friendly, and properly formatted. Correct any grammar or spelling mistakes. Preserve the main intent and key details of the agent's message. ALWAYS start the reply by addressing the customer by their FIRST name ONLY (e.g. 'Hi [First Name],'). ALWAYS end the reply by signing off with 'Best regards,\nCode with Mosh Support'. Return ONLY the polished response message text, without quotes or additional commentary.",
+            "You are an expert customer support assistant. Polish and refine the support agent's draft reply. Make it polite, professional, clear, customer-friendly, and properly formatted. Correct any grammar or spelling mistakes. Preserve the main intent and key details of the agent's message. ALWAYS start the reply by addressing the customer by their FIRST name ONLY (e.g. 'Hi [First Name],'). ALWAYS end the reply by signing off with 'Best regards,\nCode with Prem Support'. Return ONLY the polished response message text, without quotes or additional commentary.",
           prompt: `Ticket Subject: ${ticketSubject || "N/A"}\nTicket Body: ${ticketBody || "N/A"}\nCustomer First Name: ${customerFirstName}\n\nDraft Reply to Polish:\n${trimmedDraft}`,
         });
 
@@ -72,8 +72,8 @@ function enhanceDraftFallback(draft: string, customerFirstName?: string): string
     text += ".";
   }
 
-  if (!lower.includes("code with mosh support")) {
-    text += "\n\nIf you need any further assistance, please feel free to reach out.\n\nBest regards,\nCode with Mosh Support";
+  if (!lower.includes("code with prem support") && !lower.includes("code with mosh support")) {
+    text += "\n\nIf you need any further assistance, please feel free to reach out.\n\nBest regards,\nCode with Prem Support";
   }
 
   return text;
