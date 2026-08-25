@@ -169,7 +169,7 @@ Respond ONLY with the exact category string (e.g. "General question", "Technical
   if (googleApiKey && googleApiKey.trim() !== "") {
     try {
       const { text } = await generateText({
-        model: google("gemini-1.5-flash-latest"),
+        model: google("gemini-2.0-flash"),
         system: `You are an automated ticket classification assistant. Categorize customer support tickets into EXACTLY ONE of these categories:
 1. "General question"
 2. "Technical question"
@@ -266,7 +266,7 @@ If none of the articles answer the ticket, respond with JSON ONLY:
         .join("\n\n");
 
       const { text } = await generateText({
-        model: google("gemini-1.5-flash-latest"),
+        model: google("gemini-2.0-flash"),
         system: `Analyze ticket and KB articles. If an article directly answers the inquiry, reply with JSON: {"canResolve": true, "articleId": "<ID>", "answer": "<response>"}. Otherwise reply {"canResolve": false}.
 
 Knowledge Base:

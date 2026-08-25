@@ -4,8 +4,20 @@ import { createTicketFromEmailSchema, TicketStatus, TicketCategory, SenderType }
 import { formatAgents } from "../../../core/src/utils/formatAgents.js";
 import { enqueueTicketClassification } from "../services/queueService.js";
 import { sendTicketReplyEmail } from "../services/emailService.js";
+import { checkGmailInbox } from "../services/emailListenerService.js";
 
 const router = Router();
+
+// ── POST /api/tickets/sync-inbox ────────────────────────────────────
+// Manually triggers Gmail inbox sync
+router.post("/sync-inbox", async (_req, res) => {
+  try {
+    checkGmailInbox().catch((err) => console.warn("Manual sync error:", err));
+    res.json({ message: "Gmail inbox sync initiated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to trigger inbox sync" });
+  }
+});
 
 // ── POST /api/tickets/inbound ───────────────────────────────────────
 // Receives an incoming email at support address and converts it to a ticket
@@ -13,10 +25,10 @@ router.post("/inbound", async (req, res) => {
   try {
     // Standardize body fields (supporting 'from'/'senderEmail', 'fromName'/'senderName', and 'text'/'body')
     const rawPayload = {
-      senderName: req.body.senderName || req.body.fromName || req.body.name,
-      senderEmail: req.body.senderEmail || req.body.from || req.body.sender,
-      subject: req.body.subject,
-      body: req.body.body || req.body.text || req.body["body-plain"],
+      senderName: req.body.senderName || req.body.fromName || req.body.name || "Support Customer",
+      senderEmail: req.body.senderEmail || req.body.from || req.body.sender || "customer@example.com",
+      subject: req.body.subject || "Incoming Support Request",
+      body: req.body.body || req.body.text || req.body["body-plain"] || "New ticket request received.",
       category: req.body.category,
     };
 
@@ -250,10 +262,11 @@ router.get("/", async (req, res) => {
 
     const where: any = {};
     if (typeof status === "string" && status.trim() !== "" && status !== "all") {
-      where.status = status;
-    } else {
-      // By default, exclude new/processing/resolved AI tickets from the main agent queue
-      where.status = { notIn: [TicketStatus.NEW, TicketStatus.PROCESSING, TicketStatus.RESOLVED] };
+      if (status === "active") {
+        where.status = { in: [TicketStatus.NEW, TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.PROCESSING] };
+      } else {
+        where.status = status;
+      }
     }
     if (typeof category === "string" && category.trim() !== "" && category !== "all") {
       where.category = category;

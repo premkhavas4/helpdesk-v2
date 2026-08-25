@@ -10,7 +10,8 @@
     "start": "npm --prefix server run start",
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "serve": "npm run build:client && npm run dev:server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

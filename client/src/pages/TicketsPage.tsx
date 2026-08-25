@@ -50,6 +50,20 @@ export default function TicketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncGmail = async () => {
+    setIsSyncing(true);
+    try {
+      await axios.post(`${API_URL}/api/tickets/sync-inbox`);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        setIsSyncing(false);
+      }, 2000);
+    } catch (err) {
+      setIsSyncing(false);
+    }
+  };
 
   // TanStack Table Sorting state (default: highest ID first / id desc)
   const [sorting, setSorting] = useState<SortingState>([
@@ -334,15 +348,28 @@ export default function TicketsPage() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Support Tickets</h1>
           <p className="text-gray-500 mt-1">View, sort, and manage support tickets with server-side pagination.</p>
         </div>
-        <button
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets"] })}
-          className="self-start md:self-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-gray-300"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh List
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleSyncGmail}
+            disabled={isSyncing}
+            className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-blue-200 disabled:opacity-50"
+            title="Force Gmail Inbox Sync"
+          >
+            <svg className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {isSyncing ? "Syncing Gmail..." : "Sync Gmail Inbox"}
+          </button>
+
+
+
+          <button
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets"] })}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-gray-300"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats Cards */}
@@ -587,6 +614,8 @@ export default function TicketsPage() {
           </div>
         )}
       </div>
+
+
     </div>
   );
 }
