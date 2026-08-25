@@ -257,16 +257,16 @@ export default function UsersPage() {
           }}
           className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
         >
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-lg w-full mx-4 transition-transform scale-100">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xl max-w-lg w-full mx-4 transition-transform scale-100">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {editingUser ? "Edit Team Member" : "Create New Team Member"}
               </h2>
               <button
                 type="button"
                 aria-label="Close Modal"
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -274,54 +274,54 @@ export default function UsersPage() {
               </button>
             </div>
             {formError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium">
                 ⚠️ {formError}
               </div>
             )}
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Full Name</label>
                 <input
                   type="text"
                   placeholder="John Doe"
                   {...register("name")}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 {errors.name && (
                   <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.name.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Email Address *</label>
                 <input
                   type="email"
                   placeholder="john.doe@company.com"
                   {...register("email")}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 {errors.email && (
                   <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.email.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
                   {editingUser ? "Password (leave blank to keep current)" : "Password *"}
                 </label>
                 <input
                   type="password"
                   placeholder={editingUser ? "•••••••• (unchanged)" : "••••••••"}
                   {...register("password")}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.password.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Role *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Role *</label>
                 <select
                   {...register("role")}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value={UserRole.AGENT}>Agent (Support Staff)</option>
                   <option value={UserRole.ADMIN}>Administrator (Full Access)</option>
@@ -330,11 +330,11 @@ export default function UsersPage() {
                   <p className="text-red-500 text-xs mt-1 font-medium">⚠️ {errors.role.message}</p>
                 )}
               </div>
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -368,29 +368,29 @@ export default function UsersPage() {
           }}
           className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
         >
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl max-w-md w-full mx-4 transition-transform scale-100">
-            <div className="flex items-center gap-3 text-red-600 mb-3">
-              <div className="p-2 bg-red-100 rounded-full">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xl max-w-md w-full mx-4 transition-transform scale-100">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Delete Team Member</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Team Member</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete <span className="font-semibold text-gray-900">{userToDelete.name || userToDelete.email}</span> ({userToDelete.email})? This user will be soft-deleted.
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+              Are you sure you want to delete <span className="font-semibold text-gray-900 dark:text-white">{userToDelete.name || userToDelete.email}</span> ({userToDelete.email})? This user will be soft-deleted.
             </p>
             {deleteError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium">
                 ⚠️ {deleteError}
               </div>
             )}
-            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
               <button
                 type="button"
                 onClick={handleCloseDeleteModal}
                 disabled={deleteUserMutation.isPending}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
