@@ -185,14 +185,14 @@ export default function UsersPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">User Management</h1>
-          <p className="text-gray-500 mt-1">Manage team members, roles, and platform permissions.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">User Management</h1>
+          <p className="text-gray-500 dark:text-slate-400 mt-1">Manage team members, roles, and platform permissions.</p>
         </div>
         <button
           onClick={showAddForm ? handleCloseModal : handleOpenAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+          className="self-start sm:self-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm whitespace-nowrap"
         >
           {showAddForm ? (
             "Close Form"
