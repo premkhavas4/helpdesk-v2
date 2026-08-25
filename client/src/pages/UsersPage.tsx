@@ -209,36 +209,36 @@ export default function UsersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-sm text-gray-500 font-medium">Total Members</span>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{totalUsers}</h3>
+            <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">Total Members</span>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalUsers}</h3>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/40 rounded-lg text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-sm text-gray-500 font-medium">Administrators</span>
-            <h3 className="text-2xl font-bold text-purple-900 mt-1">{adminCount}</h3>
+            <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">Administrators</span>
+            <h3 className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{adminCount}</h3>
           </div>
-          <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/40 rounded-lg text-purple-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-sm text-gray-500 font-medium">Agents</span>
-            <h3 className="text-2xl font-bold text-green-900 mt-1">{agentCount}</h3>
+            <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">Agents</span>
+            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{agentCount}</h3>
           </div>
-          <div className="p-3 bg-green-50 rounded-lg text-green-600">
+          <div className="p-3 bg-green-50 dark:bg-green-900/40 rounded-lg text-green-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
@@ -408,7 +408,7 @@ export default function UsersPage() {
       )}
 
       {/* Main Table Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="animate-pulse p-6 space-y-4">
             {/* Table Header skeleton */}
@@ -447,7 +447,7 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-600 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   <th className="px-6 py-4">Name</th>
                   <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4">Role</th>
@@ -455,26 +455,26 @@ export default function UsersPage() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {users.map((u) => {
                   const isAdminUser = u.role.toLowerCase() === "admin";
                   const isSelf = currentUser?.id === u.id;
                   const isDeleteDisabled = isAdminUser || isSelf;
 
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                       {/* Name */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                             {u.name ? u.name.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{u.name || "—"}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-slate-100">{u.name || "—"}</span>
                         </div>
                       </td>
 
                       {/* Email */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-400">{u.email}</td>
 
                       {/* Role */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -490,7 +490,7 @@ export default function UsersPage() {
                       </td>
 
                       {/* Created Date */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                         {new Date(u.createdAt).toLocaleDateString(undefined, {
                           year: "numeric",
                           month: "long",

@@ -374,48 +374,48 @@ export default function TicketsPage() {
 
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Total Tickets</span>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{totalTicketsCount}</h3>
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Total Tickets</span>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalTicketsCount}</h3>
           </div>
-          <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
+          <div className="p-3 bg-gray-100 dark:bg-slate-700 rounded-lg text-gray-600 dark:text-slate-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider">Open (Current Page)</span>
-            <h3 className="text-2xl font-bold text-blue-900 mt-1">{openCount}</h3>
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{openCount}</h3>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/40 rounded-lg text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Resolved (Current Page)</span>
-            <h3 className="text-2xl font-bold text-emerald-900 mt-1">{resolvedCount}</h3>
+            <h3 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{resolvedCount}</h3>
           </div>
-          <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/40 rounded-lg text-emerald-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Closed (Current Page)</span>
-            <h3 className="text-2xl font-bold text-gray-700 mt-1">{closedCount}</h3>
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Closed (Current Page)</span>
+            <h3 className="text-2xl font-bold text-gray-700 dark:text-slate-300 mt-1">{closedCount}</h3>
           </div>
-          <div className="p-3 bg-gray-100 rounded-lg text-gray-500">
+          <div className="p-3 bg-gray-100 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -424,7 +424,7 @@ export default function TicketsPage() {
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
         {/* Search Input */}
         <div className="relative w-full md:w-96">
           <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,18 +435,18 @@ export default function TicketsPage() {
             placeholder="Search by subject, sender, body..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>
 
         {/* Dropdown Filters */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div>
-            <label className="text-xs text-gray-500 font-medium mr-2">Status:</label>
+            <label className="text-xs text-gray-500 dark:text-slate-400 font-medium mr-2">Status:</label>
             <select
               value={statusFilter}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="all">Active Queue (Open & In Progress)</option>
               <option value={TicketStatus.NEW}>New</option>
@@ -459,11 +459,11 @@ export default function TicketsPage() {
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 font-medium mr-2">Category:</label>
+            <label className="text-xs text-gray-500 dark:text-slate-400 font-medium mr-2">Category:</label>
             <select
               value={categoryFilter}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="all">All Categories</option>
               <option value={TicketCategory.GENERAL_QUESTION}>General question</option>
@@ -475,7 +475,7 @@ export default function TicketsPage() {
       </div>
 
       {/* TanStack Table View */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="animate-pulse p-6 space-y-4">
             <div className="h-4 bg-gray-200 rounded w-1/4"></div>
@@ -498,14 +498,14 @@ export default function TicketsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <tr key={headerGroup.id} className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-600 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                     {headerGroup.headers.map((header) => {
                       const isSorted = header.column.getIsSorted();
                       return (
                         <th
                           key={header.id}
                           onClick={header.column.getToggleSortingHandler()}
-                          className="px-6 py-4 cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                          className="px-6 py-4 cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
                           title="Click to sort by this column"
                         >
                           <div className="flex items-center gap-1.5">
@@ -521,9 +521,9 @@ export default function TicketsPage() {
                   </tr>
                 ))}
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-6 py-4">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -535,24 +535,24 @@ export default function TicketsPage() {
             </table>
 
             {table.getRowModel().rows.length === 0 && (
-              <div className="p-8 text-center text-gray-500 text-sm">
+              <div className="p-8 text-center text-gray-500 dark:text-slate-400 text-sm">
                 No support tickets found matching your filters.
               </div>
             )}
 
             {/* Pagination Controls Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 border-t border-gray-200 dark:border-slate-600 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <span>
                   Showing{" "}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-white">
                     {totalCount === 0 ? 0 : pageIndex * pageSize + 1}
                   </span>{" "}
                   to{" "}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-white">
                     {Math.min((pageIndex + 1) * pageSize, totalCount)}
                   </span>{" "}
-                  of <span className="font-semibold text-gray-900">{totalCount}</span> tickets
+                  of <span className="font-semibold text-gray-900 dark:text-white">{totalCount}</span> tickets
                 </span>
                 <span className="text-gray-300">|</span>
                 <select
@@ -560,7 +560,7 @@ export default function TicketsPage() {
                   onChange={(e) => {
                     table.setPageSize(Number(e.target.value));
                   }}
-                  className="border border-gray-300 rounded px-2 py-1 bg-white text-xs text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-xs text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {[10, 20, 25, 50, 100].map((size) => (
                     <option key={size} value={size}>
@@ -574,7 +574,7 @@ export default function TicketsPage() {
                 <button
                   onClick={() => table.setPageIndex(0)}
                   disabled={!table.getCanPreviousPage()}
-                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  className="px-2.5 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
                   title="First Page"
                 >
                   « First
@@ -582,21 +582,21 @@ export default function TicketsPage() {
                 <button
                   onClick={() => table.previousPage()}
                   disabled={!table.getCanPreviousPage()}
-                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  className="px-2.5 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
                   title="Previous Page"
                 >
                   ‹ Prev
                 </button>
 
-                <span className="px-3 text-xs font-medium text-gray-700">
-                  Page <span className="font-bold text-gray-900">{pageIndex + 1}</span> of{" "}
-                  <span className="font-bold text-gray-900">{totalPages || 1}</span>
+                <span className="px-3 text-xs font-medium text-gray-700 dark:text-slate-400">
+                  Page <span className="font-bold text-gray-900 dark:text-white">{pageIndex + 1}</span> of{" "}
+                  <span className="font-bold text-gray-900 dark:text-white">{totalPages || 1}</span>
                 </span>
 
                 <button
                   onClick={() => table.nextPage()}
                   disabled={!table.getCanNextPage()}
-                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  className="px-2.5 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
                   title="Next Page"
                 >
                   Next ›
@@ -604,7 +604,7 @@ export default function TicketsPage() {
                 <button
                   onClick={() => table.setPageIndex(totalPages - 1)}
                   disabled={!table.getCanNextPage()}
-                  className="px-2.5 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  className="px-2.5 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
                   title="Last Page"
                 >
                   Last »
