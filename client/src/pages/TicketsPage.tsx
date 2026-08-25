@@ -180,7 +180,7 @@ export default function TicketsPage() {
   const columns = [
     columnHelper.accessor("id", {
       header: "ID",
-      cell: (info) => <span className="font-semibold text-gray-700">#{info.getValue()}</span>,
+      cell: (info) => <span className="font-semibold text-gray-700 dark:text-slate-300">#{info.getValue()}</span>,
     }),
     columnHelper.accessor("subject", {
       header: "Subject",
@@ -190,12 +190,12 @@ export default function TicketsPage() {
           <div className="max-w-md">
             <Link
               to={`/tickets/${ticket.id}`}
-              className="text-sm font-semibold text-gray-900 hover:underline truncate block"
+              className="text-sm font-semibold text-gray-900 dark:text-slate-100 hover:underline dark:hover:text-blue-400 truncate block"
               title={ticket.subject}
             >
               {ticket.subject}
             </Link>
-            <p className="text-xs text-gray-500 truncate mt-0.5" title={ticket.body}>
+            <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5" title={ticket.body}>
               {ticket.body}
             </p>
           </div>
@@ -208,8 +208,8 @@ export default function TicketsPage() {
         const ticket = info.row.original;
         return (
           <div>
-            <div className="text-sm font-medium text-gray-900">{ticket.senderName}</div>
-            <div className="text-xs text-gray-500">{ticket.senderEmail}</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-slate-200">{ticket.senderName}</div>
+            <div className="text-xs text-gray-500 dark:text-slate-400">{ticket.senderEmail}</div>
           </div>
         );
       },
@@ -227,7 +227,7 @@ export default function TicketsPage() {
               const newCategory = e.target.value || null;
               updateTicketMutation.mutate({ ticketId: ticket.id, category: newCategory });
             }}
-            className="border border-purple-200 rounded px-2.5 py-1 bg-purple-50 text-xs font-medium text-purple-700 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-sm"
+            className="border border-purple-200 dark:border-purple-800 rounded px-2.5 py-1 bg-purple-50 dark:bg-slate-700 text-xs font-medium text-purple-700 dark:text-purple-300 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-sm"
           >
             <option value="">Uncategorized</option>
             <option value={TicketCategory.GENERAL_QUESTION}>{TicketCategory.GENERAL_QUESTION}</option>
@@ -289,7 +289,7 @@ export default function TicketsPage() {
               const newAgentId = e.target.value || null;
               assignTicketMutation.mutate({ ticketId: ticket.id, assignedTo: newAgentId });
             }}
-            className="border border-gray-300 rounded px-2 py-1 bg-white text-xs font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
+            className="border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-xs font-medium text-gray-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
           >
             <option value="">Unassigned</option>
             {agents.map((agent) => (
@@ -304,7 +304,7 @@ export default function TicketsPage() {
     columnHelper.accessor("createdAt", {
       header: "Created At",
       cell: (info) => (
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 dark:text-slate-400">
           {new Date(info.getValue()).toLocaleString(undefined, {
             year: "numeric",
             month: "short",
@@ -352,7 +352,7 @@ export default function TicketsPage() {
           <button
             onClick={handleSyncGmail}
             disabled={isSyncing}
-            className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-blue-200 disabled:opacity-50"
+            className="bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-blue-200 dark:border-blue-800 disabled:opacity-50"
             title="Force Gmail Inbox Sync"
           >
             <svg className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,7 +365,7 @@ export default function TicketsPage() {
 
           <button
             onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets"] })}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-gray-300"
+            className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm border border-gray-300 dark:border-slate-600"
           >
             Refresh
           </button>
